@@ -1,0 +1,58 @@
+{
+  "name": "@tabstack/video-generator",
+  "version": "1.0.0",
+  "description": "Turn any landing page into a premium product launch video. Uses Tabstack API for extraction, Gemini AI for storyboard planning, and Remotion for rendering.",
+  "type": "module",
+  "bin": {
+    "tabstack-video": "./dist/bin/cli.js"
+  },
+  "main": "./dist/server.js",
+  "files": [
+    "dist/",
+    "public/",
+    "skill/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "video",
+    "mcp",
+    "remotion",
+    "ai",
+    "product-launch",
+    "tabstack",
+    "gemini",
+    "landing-page"
+  ],
+  "author": "Tabstack",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^1.40.0",
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "@remotion/bundler": "4.0.419",
+    "@remotion/cli": "4.0.419",
+    "@remotion/renderer": "4.0.419",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.419",
+    "zod": "3.22.4",
+    "zod-to-json-schema": "3.23.5"
+  },
+  "overrides": {
+    "zod": "3.22.4",
+    "zod-to-json-schema": "3.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
