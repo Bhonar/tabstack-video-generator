@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tabstack-video": {
+      "command": "npx",
+      "args": ["@tabstack/video-generator"],
+      "env": {
+        "TABSTACK_API_KEY": "${TABSTACK_API_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+        "WAVESPEED_API_KEY": "${WAVESPEED_API_KEY}"
+      }
+    }
+  }
+}
