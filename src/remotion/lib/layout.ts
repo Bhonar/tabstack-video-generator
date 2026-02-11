@@ -13,13 +13,18 @@ export const SAFE_AREA = {
   height: CANVAS.height - CANVAS.padding * 2,
 } as const;
 
-/** Standard durations in frames (at 30fps) */
+/** Standard durations in frames (at 30fps) — narrative structure */
 export const DURATIONS = {
-  intro: 120, // 4 seconds
-  heroScreenshot: 150, // 5 seconds
-  features: 180, // 6 seconds
-  stats: 120, // 4 seconds
-  pricing: 150, // 5 seconds
-  cta: 90, // 3 seconds
-  transition: 15, // 0.5 seconds
+  hook: 65, // ~2.2 seconds
+  problem: 65, // ~2.2 seconds
+  solution: 80, // ~2.7 seconds
+  useCases: 65, // ~2.2 seconds
+  results: 65, // ~2.2 seconds
+  cta: 55, // ~1.8 seconds
 } as const;
+
+/** Calculate beat-synced transition duration from BPM */
+export function getTransitionDuration(bpm: number, fps: number = 30): number {
+  const framesPerBeat = (60 / bpm) * fps;
+  return Math.max(8, Math.min(18, Math.round(framesPerBeat / 2)));
+}

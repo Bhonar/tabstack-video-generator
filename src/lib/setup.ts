@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { runPreflight, formatPreflightReport, getPackageRoot } from "./preflight.js";
-import { hasRequiredKeys, hasWaveSpeedKey } from "./defaults.js";
+import { hasRequiredKeys, hasWaveSpeedKey, hasAnthropicKey } from "./defaults.js";
 
 // ── ANSI ──
 
@@ -86,23 +86,40 @@ export async function runSetup(): Promise<void> {
     output: process.stdout,
   });
 
-  if (hasRequiredKeys()) {
-    print(`      TabStack + Gemini keys ${GREEN}ready${RESET}`);
+  // Required: TabStack
+  if (process.env.TABSTACK_API_KEY) {
+    print(`      TabStack key ${GREEN}ready${RESET}`);
   } else {
-    if (!process.env.TABSTACK_API_KEY) {
-      print(`      ${YELLOW}TABSTACK_API_KEY is not set${RESET}`);
-      print(`      ${DIM}Get your free key at: https://console.tabstack.ai${RESET}`);
-      print(`        ${BOLD}export TABSTACK_API_KEY=ts_xxx${RESET}`);
-      print("");
-    }
-    if (!process.env.GEMINI_API_KEY) {
-      print(`      ${YELLOW}GEMINI_API_KEY is not set${RESET}`);
-      print(`      ${DIM}Get your free key at: https://aistudio.google.com/apikey${RESET}`);
-      print(`        ${BOLD}export GEMINI_API_KEY=AIza...${RESET}`);
-      print("");
-    }
+    print(`      ${YELLOW}TABSTACK_API_KEY is not set${RESET}`);
+    print(`      ${DIM}Get your free key at: https://console.tabstack.ai${RESET}`);
+    print(`        ${BOLD}export TABSTACK_API_KEY=ts_xxx${RESET}`);
+    print("");
   }
 
+  // AI Providers (at least one required)
+  print("");
+  print(`      ${BOLD}AI Providers${RESET} ${DIM}(at least one required)${RESET}`);
+  if (process.env.GEMINI_API_KEY) {
+    print(`      Gemini key ${GREEN}ready${RESET} — storyboard planning + TTS narration`);
+  } else {
+    print(`      ${DIM}GEMINI_API_KEY not set${RESET}`);
+    print(`      ${DIM}Get your free key at: https://aistudio.google.com/apikey${RESET}`);
+    print(`        ${BOLD}export GEMINI_API_KEY=AIza...${RESET}`);
+  }
+  if (hasAnthropicKey()) {
+    print(`      Anthropic key ${GREEN}ready${RESET} — storyboard planning (no TTS)`);
+  } else {
+    print(`      ${DIM}ANTHROPIC_API_KEY not set${RESET}`);
+    print(`      ${DIM}Get your key at: https://console.anthropic.com/settings/keys${RESET}`);
+    print(`        ${BOLD}export ANTHROPIC_API_KEY=sk-ant-...${RESET}`);
+  }
+
+  if (!hasRequiredKeys()) {
+    print("");
+    print(`      ${YELLOW}At least one AI provider key (Gemini or Anthropic) is needed.${RESET}`);
+  }
+
+  print("");
   if (hasWaveSpeedKey()) {
     print(`      WaveSpeed key ${GREEN}ready${RESET} — AI-generated music enabled`);
   } else {
@@ -129,9 +146,11 @@ export async function runSetup(): Promise<void> {
   print("");
   print(`${BOLD}Usage:${RESET}`);
   print(`  ${CYAN}CLI:${RESET}        npx @tabstack/video-generator --url https://example.com`);
+  print(`  ${CYAN}With AI:${RESET}    npx @tabstack/video-generator --url https://example.com --ai claude`);
   print(`  ${CYAN}Claude:${RESET}     claude mcp add tabstack-video \\`);
   print(`                -e TABSTACK_API_KEY=... \\`);
   print(`                -e GEMINI_API_KEY=... \\`);
+  print(`                -e ANTHROPIC_API_KEY=... \\`);
   print(`                -- npx @tabstack/video-generator`);
   print(`  ${CYAN}Ask Claude:${RESET} "Generate a video for https://example.com"`);
   print("");

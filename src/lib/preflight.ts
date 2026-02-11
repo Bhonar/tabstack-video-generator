@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "node:url";
-import { hasRequiredKeys, hasWaveSpeedKey } from "./defaults.js";
+import { hasRequiredKeys, hasWaveSpeedKey, resolveAiProvider } from "./defaults.js";
 
 // ── Types ──
 
@@ -31,14 +31,18 @@ export function getPackageRoot(): string {
 
 // ── Pre-flight checks ──
 
-export async function runPreflight(): Promise<PreflightResult> {
+export async function runPreflight(aiProvider?: string): Promise<PreflightResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Check 1: Required API keys (TabStack + Gemini — built-in defaults available)
-  if (!hasRequiredKeys()) {
+  // Resolve which provider will be used
+  const provider = resolveAiProvider(aiProvider);
+
+  // Check 1: Required API keys (TabStack + AI provider)
+  if (!hasRequiredKeys(provider)) {
+    const keyName = provider === "claude" ? "ANTHROPIC_API_KEY" : "GEMINI_API_KEY";
     errors.push(
-      "Required API keys are missing and no built-in defaults found. Run: npx @tabstack/video-generator --setup",
+      `Required API keys missing for ${provider} provider. Ensure TABSTACK_API_KEY and ${keyName} are set. Run: npx @tabstack/video-generator --setup`,
     );
   }
 
@@ -46,7 +50,14 @@ export async function runPreflight(): Promise<PreflightResult> {
   try {
     execSync("which ffmpeg", { stdio: "pipe" });
   } catch {
-    errors.push("FFmpeg is not installed. Install it with: brew install ffmpeg");
+    const platform = process.platform;
+    const installHint =
+      platform === "darwin"
+        ? "Install with: brew install ffmpeg  (or download from https://evermeet.cx/ffmpeg/)"
+        : platform === "linux"
+          ? "Install with: sudo apt install ffmpeg"
+          : "Install from: https://ffmpeg.org/download.html  (or: winget install ffmpeg)";
+    errors.push(`FFmpeg is not installed. ${installHint}`);
   }
 
   // Check 3: WAVESPEED_API_KEY (optional — for AI-generated music)
@@ -56,7 +67,14 @@ export async function runPreflight(): Promise<PreflightResult> {
     );
   }
 
-  // Check 4: Audio files
+  // Check 4: Provider-specific warnings
+  if (provider === "claude") {
+    warnings.push(
+      "TTS narration is not available with the Claude provider. Use --ai gemini for voiceover narration.",
+    );
+  }
+
+  // Check 5: Audio files
   const audioDir = path.resolve(getPackageRoot(), "public/audio");
   try {
     const files = fs.readdirSync(audioDir).filter((f) => f.endsWith(".mp3"));

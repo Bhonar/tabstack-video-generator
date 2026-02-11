@@ -36,6 +36,8 @@ export interface GenerateVideoOptions {
   outputPath: string;
   audioMoodOverride?: string;
   skipAiAudio?: boolean;
+  skipNarration?: boolean;
+  aiProvider?: string; // "gemini" | "claude" — auto-detected if not set
 }
 
 // ── Result returned after video generation ──
@@ -46,7 +48,9 @@ export interface GenerateVideoResult {
   sceneCount: number;
   audioMood: string;
   audioGenerated: boolean;
+  narrationGenerated: boolean;
   storyboardSummary: string;
+  aiProvider: string;
 }
 
 // ── Audio generation plan from Gemini storyboard ──
@@ -54,6 +58,7 @@ export interface GenerateVideoResult {
 export interface AudioGenerationPlan {
   audioPrompt: string;
   audioLyrics: string;
+  narrationScript?: string;
 }
 
 // ── The JSON schema sent to Tabstack /extract/json ──

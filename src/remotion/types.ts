@@ -15,61 +15,63 @@ export interface ColorTheme {
   textSecondary: string;
 }
 
-// ── Audio mood ──
+// ── Audio mood — all dramatic/cinematic styles ──
 export type AudioMood =
-  | "tech"
-  | "elegant"
-  | "corporate"
-  | "energetic"
-  | "minimal";
+  | "cinematic-classical"
+  | "cinematic-electronic"
+  | "cinematic-pop"
+  | "cinematic-epic"
+  | "cinematic-dark";
 
-// ── Scene type discriminated union ──
+// ── Narrative scene types ──
 
-export interface IntroSceneData {
-  type: "intro";
+export interface HookSceneData {
+  type: "hook";
   durationInFrames: number;
   brandName: string;
   tagline: string;
   logoUrl?: string;
+  claim?: string;
 }
 
-export interface HeroScreenshotSceneData {
-  type: "hero-screenshot";
+export interface ProblemSceneData {
+  type: "problem";
   durationInFrames: number;
-  screenshotUrl: string;
-  headline?: string;
-  subheadline?: string;
+  headline: string;
+  painPoints: string[];
 }
 
-export interface FeaturesSceneData {
-  type: "features";
+export interface SolutionSceneData {
+  type: "solution";
   durationInFrames: number;
-  sectionTitle: string;
+  headline: string;
   features: Array<{
+    title: string;
+    description: string;
+    icon?: string;
+  }>;
+  screenshotUrl?: string;
+}
+
+export interface UseCasesSceneData {
+  type: "use-cases";
+  durationInFrames: number;
+  headline: string;
+  cases: Array<{
     title: string;
     description: string;
     icon?: string;
   }>;
 }
 
-export interface StatsSceneData {
-  type: "stats";
+export interface ResultsSceneData {
+  type: "results";
   durationInFrames: number;
+  headline?: string;
   stats: Array<{
     value: number;
     suffix: string;
     label: string;
-  }>;
-}
-
-export interface PricingSceneData {
-  type: "pricing";
-  durationInFrames: number;
-  tiers: Array<{
-    name: string;
-    price: string;
-    highlighted: boolean;
-    features: string[];
   }>;
 }
 
@@ -88,14 +90,18 @@ export interface TransitionSceneData {
   style: "fade" | "wipe" | "zoom" | "slide";
 }
 
-// ── Union type for all scenes ──
+// ── Content scenes only (no transitions) ──
+export type ContentSceneData =
+  | HookSceneData
+  | ProblemSceneData
+  | SolutionSceneData
+  | UseCasesSceneData
+  | ResultsSceneData
+  | CTASceneData;
+
+// ── Union type for all scenes (including legacy transition) ──
 export type SceneData =
-  | IntroSceneData
-  | HeroScreenshotSceneData
-  | FeaturesSceneData
-  | StatsSceneData
-  | PricingSceneData
-  | CTASceneData
+  | ContentSceneData
   | TransitionSceneData;
 
 // ── The top-level props passed to ProductLaunchVideo via inputProps ──
@@ -104,5 +110,7 @@ export type ProductLaunchProps = {
   colorTheme: ColorTheme;
   audioMood: AudioMood;
   productUrl: string;
+  audioBpm?: number; // BPM of the generated audio for beat-synced transitions
   audioTrackFile?: string; // Generated audio filename in public/audio/, e.g. "generated-1707400000.mp3"
+  narrationTrackFile?: string; // Generated TTS narration filename in public/audio/, e.g. "narration-1707400000.wav"
 };

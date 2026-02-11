@@ -31,11 +31,13 @@
   "author": "Tabstack",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@google/genai": "^1.40.0",
     "@modelcontextprotocol/sdk": "1.26.0",
     "@remotion/bundler": "4.0.419",
     "@remotion/cli": "4.0.419",
     "@remotion/renderer": "4.0.419",
+    "@remotion/transitions": "^4.0.419",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "4.0.419",

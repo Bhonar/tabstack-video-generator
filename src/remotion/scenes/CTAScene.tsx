@@ -7,9 +7,9 @@ import {
   interpolate,
 } from "remotion";
 import type { CTASceneData, ColorTheme } from "../types.js";
-import { SPRING_CONFIG, GENTLE_SPRING } from "../lib/animations.js";
+import { SLAM_SPRING, SPRING_CONFIG, BOUNCE_SPRING } from "../lib/animations.js";
 import { FONTS } from "../lib/fonts.js";
-import { themeGradient } from "../lib/colors.js";
+import { themeGradient, isLightTheme, themeTextGlow } from "../lib/colors.js";
 
 type Props = CTASceneData & { colorTheme: ColorTheme };
 
@@ -22,44 +22,58 @@ export const CTAScene: React.FC<Props> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const light = isLightTheme(colorTheme);
 
-  // Headline scale-in
+  // Background zoom
+  const bgScale = interpolate(frame, [0, durationInFrames], [1.05, 1], {
+    extrapolateRight: "clamp",
+  });
+
+  // Headline — dramatic slam from large
   const headlineProgress = spring({
-    frame: Math.max(0, frame - 5),
+    frame: Math.max(0, frame - 2),
     fps,
-    config: SPRING_CONFIG,
+    config: SLAM_SPRING,
   });
-  const headlineScale = interpolate(headlineProgress, [0, 1], [0.9, 1]);
+  const headlineScale = interpolate(headlineProgress, [0, 1], [1.5, 1]);
 
-  // Subheadline fade
+  // Subheadline — fast
   const subProgress = spring({
-    frame: Math.max(0, frame - 18),
-    fps,
-    config: GENTLE_SPRING,
-  });
-
-  // Button slide-up
-  const buttonProgress = spring({
-    frame: Math.max(0, frame - 30),
+    frame: Math.max(0, frame - 10),
     fps,
     config: SPRING_CONFIG,
   });
+
+  // Button — bounce in (uses brand primary color)
+  const buttonProgress = spring({
+    frame: Math.max(0, frame - 16),
+    fps,
+    config: BOUNCE_SPRING,
+  });
+  const buttonScale = interpolate(buttonProgress, [0, 1], [0.4, 1]);
   const buttonY = interpolate(buttonProgress, [0, 1], [30, 0]);
 
-  // Button glow pulse (after entrance)
-  const glowPhase = Math.max(0, frame - 50);
-  const glowScale = interpolate(
-    Math.sin(glowPhase * 0.08),
-    [-1, 1],
-    [0.6, 1],
-  );
+  // Button glow — fast pulse
+  const glowPulse = (Math.sin(frame * 0.2) + 1) / 2;
+  const glowIntensity = interpolate(glowPulse, [0, 1], [0.3, 1]);
 
-  // URL fade in
-  const urlProgress = spring({
-    frame: Math.max(0, frame - 40),
-    fps,
-    config: GENTLE_SPRING,
+  // Pulsing glow ring
+  const ringScale = interpolate(frame, [0, durationInFrames], [0.8, 1.3], {
+    extrapolateRight: "clamp",
   });
+  const ringOpacity = interpolate(frame, [0, durationInFrames], [0.4, 0], {
+    extrapolateRight: "clamp",
+  });
+
+  // URL fade
+  const urlProgress = spring({
+    frame: Math.max(0, frame - 22),
+    fps,
+    config: SPRING_CONFIG,
+  });
+
+  // Button text color — ensure contrast against brand primary
+  const buttonTextColor = light ? "#FFFFFF" : colorTheme.background;
 
   return (
     <AbsoluteFill
@@ -69,35 +83,52 @@ export const CTAScene: React.FC<Props> = ({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 28,
-        padding: 120,
+        gap: 24,
+        padding: 100,
+        transform: `scale(${bgScale})`,
       }}
     >
-      {/* Decorative radial glow */}
+      {/* Expanding glow ring */}
       <div
         style={{
           position: "absolute",
-          width: 800,
-          height: 800,
+          width: 600,
+          height: 600,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${colorTheme.primary}12 0%, transparent 60%)`,
+          border: `3px solid ${colorTheme.primary}`,
+          opacity: ringOpacity * (light ? 0.3 : 1),
+          transform: `scale(${ringScale})`,
           pointerEvents: "none",
         }}
       />
 
-      {/* Headline */}
+      {/* Pulsing radial glow */}
+      <div
+        style={{
+          position: "absolute",
+          width: 900,
+          height: 900,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${colorTheme.primary}${light ? "10" : "20"} 0%, transparent 55%)`,
+          transform: `scale(${0.9 + glowPulse * 0.2})`,
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Headline — short, punchy */}
       <div
         style={{
           opacity: headlineProgress,
           transform: `scale(${headlineScale})`,
           fontFamily: FONTS.heading,
-          fontSize: 64,
+          fontSize: 68,
           fontWeight: 800,
           color: colorTheme.text,
           textAlign: "center",
-          letterSpacing: -2,
-          lineHeight: 1.1,
+          letterSpacing: -2.5,
+          lineHeight: 1.05,
           maxWidth: 900,
+          textShadow: themeTextGlow(colorTheme, 1.5),
         }}
       >
         {headline}
@@ -108,6 +139,7 @@ export const CTAScene: React.FC<Props> = ({
         <div
           style={{
             opacity: subProgress,
+            transform: `translateY(${interpolate(subProgress, [0, 1], [20, 0])}px)`,
             fontFamily: FONTS.body,
             fontSize: 26,
             fontWeight: 400,
@@ -121,37 +153,42 @@ export const CTAScene: React.FC<Props> = ({
         </div>
       )}
 
-      {/* CTA Button */}
+      {/* CTA Button — brand primary colors */}
       <div
         style={{
           opacity: buttonProgress,
-          transform: `translateY(${buttonY}px)`,
-          marginTop: 12,
+          transform: `translateY(${buttonY}px) scale(${buttonScale})`,
+          marginTop: 8,
           position: "relative",
         }}
       >
-        {/* Glow behind button */}
-        <div
-          style={{
-            position: "absolute",
-            inset: -8,
-            borderRadius: 20,
-            background: colorTheme.primary,
-            opacity: glowScale * 0.25,
-            filter: "blur(20px)",
-          }}
-        />
+        {/* Glow behind button — only on dark themes */}
+        {!light && (
+          <div
+            style={{
+              position: "absolute",
+              inset: -12,
+              borderRadius: 22,
+              background: colorTheme.primary,
+              opacity: glowIntensity * 0.35,
+              filter: "blur(24px)",
+            }}
+          />
+        )}
         <div
           style={{
             position: "relative",
             fontFamily: FONTS.body,
-            fontSize: 22,
-            fontWeight: 600,
-            color: colorTheme.background,
-            background: colorTheme.primary,
-            padding: "16px 48px",
-            borderRadius: 14,
+            fontSize: 24,
+            fontWeight: 700,
+            color: buttonTextColor,
+            background: `linear-gradient(135deg, ${colorTheme.primary}, ${colorTheme.accent || colorTheme.primary})`,
+            padding: "18px 56px",
+            borderRadius: 16,
             letterSpacing: 0.5,
+            boxShadow: light
+              ? `0 4px 16px rgba(0,0,0,0.12)`
+              : `0 4px 20px ${colorTheme.primary}40`,
           }}
         >
           {buttonText}
@@ -161,11 +198,11 @@ export const CTAScene: React.FC<Props> = ({
       {/* URL */}
       <div
         style={{
-          opacity: urlProgress * 0.6,
+          opacity: urlProgress * 0.5,
           fontFamily: FONTS.mono,
-          fontSize: 16,
+          fontSize: 15,
           color: colorTheme.textSecondary,
-          marginTop: 8,
+          marginTop: 4,
         }}
       >
         {url}

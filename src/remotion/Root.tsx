@@ -7,7 +7,8 @@ import { VIDEO_CONFIG } from "./types.js";
 // ── Default props for Remotion Studio preview ──
 const defaultProps: ProductLaunchProps = {
   productUrl: "https://tabstack.ai",
-  audioMood: "tech",
+  audioMood: "cinematic-classical",
+  audioBpm: 128,
   colorTheme: {
     primary: "#FF97EA",
     secondary: "#1A1A1A",
@@ -18,51 +19,36 @@ const defaultProps: ProductLaunchProps = {
   },
   scenes: [
     {
-      type: "intro",
-      durationInFrames: 120,
+      type: "hook",
+      durationInFrames: 65,
       brandName: "Tabstack",
-      tagline: "Web Browsing for AI Systems",
+      tagline: "Web Browsing for AI",
+      claim: "50K+ Credits Free",
     },
     {
-      type: "transition",
-      durationInFrames: 15,
-      style: "fade",
-    },
-    {
-      type: "features",
-      durationInFrames: 180,
-      sectionTitle: "Everything You Need",
-      features: [
-        {
-          title: "Extract",
-          description: "Turn websites into structured data",
-          icon: "📄",
-        },
-        {
-          title: "Automate",
-          description: "Run browser-like automations",
-          icon: "⚡",
-        },
-        {
-          title: "Research",
-          description: "AI-powered web research",
-          icon: "🔍",
-        },
-        {
-          title: "Generate",
-          description: "Transform web data into outputs",
-          icon: "✨",
-        },
+      type: "problem",
+      durationInFrames: 65,
+      headline: "Web Data Is a Mess",
+      painPoints: [
+        "Scraping breaks often",
+        "No structured output",
+        "Dynamic pages fail",
       ],
     },
     {
-      type: "transition",
-      durationInFrames: 15,
-      style: "wipe",
+      type: "solution",
+      durationInFrames: 80,
+      headline: "Meet Tabstack",
+      features: [
+        { title: "Extract JSON", description: "", icon: "📄" },
+        { title: "Automate Browsers", description: "", icon: "⚡" },
+        { title: "AI Research", description: "", icon: "🔍" },
+      ],
     },
     {
-      type: "stats",
-      durationInFrames: 120,
+      type: "results",
+      durationInFrames: 65,
+      headline: "Proven Results",
       stats: [
         { value: 50000, suffix: "+", label: "Free Credits" },
         { value: 99, suffix: "%", label: "Uptime" },
@@ -70,53 +56,28 @@ const defaultProps: ProductLaunchProps = {
       ],
     },
     {
-      type: "transition",
-      durationInFrames: 15,
-      style: "fade",
-    },
-    {
-      type: "pricing",
-      durationInFrames: 150,
-      tiers: [
-        {
-          name: "Starter",
-          price: "Free",
-          highlighted: false,
-          features: ["50K credits/mo", "Community support"],
-        },
-        {
-          name: "Explorer",
-          price: "Pay-as-you-go",
-          highlighted: true,
-          features: ["All endpoints", "Priority support", "Team management"],
-        },
-        {
-          name: "Enterprise",
-          price: "Custom",
-          highlighted: false,
-          features: ["Dedicated SLAs", "SSO & security"],
-        },
-      ],
-    },
-    {
-      type: "transition",
-      durationInFrames: 15,
-      style: "fade",
-    },
-    {
       type: "cta",
-      durationInFrames: 90,
-      headline: "Start Building Today",
-      subheadline: "50,000 free credits. No credit card required.",
+      durationInFrames: 55,
+      headline: "Start Building",
+      subheadline: "50K free credits. No card needed.",
       buttonText: "Get Started",
       url: "console.tabstack.ai",
     },
   ],
 };
 
-// ── Calculate total duration from scenes ──
+// ── Calculate total duration accounting for transition overlaps ──
 function calculateTotalFrames(props: ProductLaunchProps): number {
-  return props.scenes.reduce((acc, scene) => acc + scene.durationInFrames, 0);
+  const contentScenes = props.scenes.filter((s) => s.type !== "transition");
+  const totalContent = contentScenes.reduce((acc, s) => acc + s.durationInFrames, 0);
+
+  // Each transition between scenes overlaps by ~half a beat
+  const bpm = props.audioBpm ?? 128;
+  const framesPerBeat = (60 / bpm) * VIDEO_CONFIG.fps;
+  const transitionFrames = Math.max(8, Math.min(18, Math.round(framesPerBeat / 2)));
+  const numTransitions = Math.max(0, contentScenes.length - 1);
+
+  return totalContent - numTransitions * transitionFrames;
 }
 
 export const RemotionRoot: React.FC = () => {

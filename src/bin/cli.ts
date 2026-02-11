@@ -74,8 +74,18 @@ async function runCli(url: string) {
     process.exit(1);
   }
 
+  // Validate AI provider
+  const VALID_PROVIDERS = ["gemini", "claude"];
+  const aiProvider = getFlagValue("--ai");
+  if (aiProvider && !VALID_PROVIDERS.includes(aiProvider)) {
+    console.error(
+      `${RED}Error: Invalid AI provider "${aiProvider}". Must be one of: ${VALID_PROVIDERS.join(", ")}${RESET}`,
+    );
+    process.exit(1);
+  }
+
   // Validate audio mood
-  const VALID_MOODS = ["tech", "elegant", "corporate", "energetic", "minimal"];
+  const VALID_MOODS = ["cinematic-classical", "cinematic-electronic", "cinematic-pop", "cinematic-epic", "cinematic-dark"];
   const audioMood = getFlagValue("--audio-mood");
   if (audioMood && !VALID_MOODS.includes(audioMood)) {
     console.error(
@@ -87,11 +97,13 @@ async function runCli(url: string) {
   const outputPath = getFlagValue("--output") || "./out/video.mp4";
   const noOpen = hasFlag("--no-open");
   const noAiAudio = hasFlag("--no-ai-audio");
+  const noNarration = hasFlag("--no-narration");
+  const narration = hasFlag("--narration");
 
   // Pre-flight
   console.log(`\n${BOLD}Pre-flight checks${RESET}`);
   const { runPreflight, formatPreflightReport } = await import("../lib/preflight.js");
-  const preflight = await runPreflight();
+  const preflight = await runPreflight(aiProvider);
   console.log(formatPreflightReport(preflight));
 
   if (!preflight.ok) {
@@ -111,11 +123,16 @@ async function runCli(url: string) {
   const { generateVideo } = await import("../tools/generate-video.js");
   const startTime = Date.now();
 
+  // skipNarration is true by default, unless --narration is explicitly passed
+  const skipNarration = noNarration || !narration;
+
   const result = await generateVideo({
     url,
     outputPath,
     audioMoodOverride: audioMood,
     skipAiAudio: noAiAudio,
+    skipNarration,
+    aiProvider,
   });
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -126,7 +143,7 @@ async function runCli(url: string) {
     `${GREEN}${BOLD}Done!${RESET} Video saved to: ${BOLD}${result.outputPath}${RESET}`,
   );
   console.log(
-    `${DIM}  Duration: ${result.durationSeconds.toFixed(1)}s | Scenes: ${result.sceneCount} | Audio: ${result.audioMood}${result.audioGenerated ? " (AI)" : ""} | Rendered in ${elapsed}s${RESET}`,
+    `${DIM}  AI: ${result.aiProvider} | Duration: ${result.durationSeconds.toFixed(1)}s | Scenes: ${result.sceneCount} | Audio: ${result.audioMood}${result.audioGenerated ? " (AI)" : ""}${result.narrationGenerated ? " + narration" : ""} | Rendered in ${elapsed}s${RESET}`,
   );
 
   // Auto-open
@@ -192,6 +209,7 @@ ${BOLD}Install:${RESET}
   ${CYAN}claude mcp add tabstack-video${RESET} \\
     ${DIM}-e TABSTACK_API_KEY=...${RESET} \\
     ${DIM}-e GEMINI_API_KEY=...${RESET} \\
+    ${DIM}-e ANTHROPIC_API_KEY=... ${RESET}${DIM}(optional, for Claude AI)${RESET} \\
     ${DIM}-e WAVESPEED_API_KEY=... ${RESET}${DIM}(optional, for AI music)${RESET} \\
     ${DIM}-- npx @tabstack/video-generator${RESET}
 
@@ -203,14 +221,25 @@ ${BOLD}Usage:${RESET}
 ${BOLD}CLI Options:${RESET}
   --url <url>           Landing page URL ${DIM}(required for CLI mode)${RESET}
   --output <path>       Output file path ${DIM}(default: ./out/video.mp4)${RESET}
-  --audio-mood <mood>   ${DIM}tech | elegant | corporate | energetic | minimal${RESET}
+  --ai <provider>       AI provider: gemini | claude ${DIM}(auto-detected from keys)${RESET}
+  --audio-mood <mood>   ${DIM}cinematic-classical | cinematic-electronic | cinematic-pop | cinematic-epic | cinematic-dark${RESET}
+  --narration           Enable AI voiceover narration ${DIM}(Gemini only — requires Gemini TTS)${RESET}
+  --no-narration        Disable narration ${DIM}(default)${RESET}
   --no-ai-audio         Skip AI music generation, use static audio files
   --no-open             Don't auto-open the video after rendering
   --help                Show this help message
 
+${BOLD}AI Providers:${RESET}
+  ${CYAN}gemini${RESET}  Google Gemini 2.5 Flash — storyboard planning + TTS narration
+  ${CYAN}claude${RESET}  Anthropic Claude Sonnet — storyboard planning (no TTS)
+
+  Auto-detection: prefers Claude if ANTHROPIC_API_KEY is set, else Gemini.
+  Override with: --ai <provider> or VIDEOGEN_AI_PROVIDER env var.
+
 ${BOLD}Examples:${RESET}
   npx @tabstack/video-generator --url https://stripe.com
-  npx @tabstack/video-generator --url https://vercel.com --audio-mood elegant
+  npx @tabstack/video-generator --url https://vercel.com --ai claude
+  npx @tabstack/video-generator --url https://vercel.com --ai gemini --narration
   npx @tabstack/video-generator --url https://linear.app --output ./linear.mp4 --no-open
 
 ${BOLD}Claude Code:${RESET}

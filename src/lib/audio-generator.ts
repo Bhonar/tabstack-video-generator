@@ -7,8 +7,8 @@ import { getWaveSpeedKey as getWaveSpeedKeyDefault, hasWaveSpeedKey } from "./de
 // ── Constants ──
 
 const WAVESPEED_BASE = "https://api.wavespeed.ai/api/v3";
-const POLL_INTERVAL_MS = 3_000;
-const POLL_TIMEOUT_MS = 120_000;
+const POLL_INTERVAL_MS = 5_000;
+const POLL_TIMEOUT_MS = 300_000; // 5 minutes — WaveSpeed queue can be slow
 
 // ── Helpers ──
 
@@ -114,40 +114,69 @@ export async function generateAudio(
   // 2. Poll for completion
   const pollDeadline = Date.now() + POLL_TIMEOUT_MS;
   let audioUrl: string | null = null;
+  let pollCount = 0;
 
   while (Date.now() < pollDeadline) {
     await sleep(POLL_INTERVAL_MS);
+    pollCount++;
 
-    const pollResponse = await fetch(
-      `${WAVESPEED_BASE}/predictions/${requestId}/result`,
-      {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
+    let pollResponse: Response;
+    try {
+      pollResponse = await fetch(
+        `${WAVESPEED_BASE}/predictions/${requestId}/result`,
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logDetail(`Poll fetch error: ${msg}, retrying...`);
+      continue;
+    }
 
     if (!pollResponse.ok) {
       logDetail(`Poll returned ${pollResponse.status}, retrying...`);
       continue;
     }
 
-    const pollData = (await pollResponse.json()) as PollResponse;
+    const rawText = await pollResponse.text();
+    let pollData: PollResponse;
+    try {
+      pollData = JSON.parse(rawText) as PollResponse;
+    } catch {
+      logDetail(`Poll returned non-JSON, retrying...`);
+      continue;
+    }
 
-    if (pollData.data?.status === "completed") {
+    // Log first poll response for debugging
+    if (pollCount === 1) {
+      logDetail(`First poll response: ${rawText.slice(0, 300)}`);
+    }
+
+    const status = pollData.data?.status;
+
+    if (status === "completed") {
       audioUrl = pollData.data.outputs?.[0] ?? null;
+      logDetail(`Audio generation completed!`);
       break;
     }
 
-    if (pollData.data?.status === "failed") {
+    if (status === "failed") {
       const errorMsg = pollData.data.error || "Unknown error";
       throw new Error(`WaveSpeed audio generation failed: ${errorMsg}`);
     }
 
-    logDetail("Audio generation in progress...");
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    // Only log every 4th poll to reduce noise (every ~20s)
+    if (pollCount % 4 === 0 || pollCount <= 2) {
+      logDetail(`Audio generation in progress... (${elapsed}s elapsed, status: ${status || "unknown"})`);
+    }
   }
 
   if (!audioUrl) {
-    throw new Error("Audio generation timed out after 120s");
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    throw new Error(`Audio generation timed out after ${elapsed}s`);
   }
 
   logDetail("Audio generation complete, downloading MP3...");

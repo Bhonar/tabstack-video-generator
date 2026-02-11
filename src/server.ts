@@ -20,25 +20,39 @@ function createServer(): McpServer {
       .string()
       .optional()
       .describe("Output file path for the MP4. Defaults to ./out/video.mp4"),
-    audioMood: z
-      .enum(["tech", "elegant", "corporate", "energetic", "minimal"])
+    aiProvider: z
+      .enum(["gemini", "claude"])
       .optional()
       .describe(
-        "Background music mood. Auto-detected from page content if not specified.",
+        "AI provider for storyboard planning. 'gemini' (Google Gemini 2.5 Flash) or 'claude' (Anthropic Claude Sonnet). Auto-detected from available API keys if not specified.",
+      ),
+    audioMood: z
+      .enum(["cinematic-classical", "cinematic-electronic", "cinematic-pop", "cinematic-epic", "cinematic-dark"])
+      .optional()
+      .describe(
+        "Dramatic music style. Default: cinematic-classical (orchestral). Auto-detected from page content if not specified.",
+      ),
+    narration: z
+      .boolean()
+      .optional()
+      .describe(
+        "Enable AI voiceover narration using Gemini TTS. Only available with Gemini provider. Default: false.",
       ),
   };
 
   // @ts-expect-error — zod 3.22.3 types don't perfectly match ZodRawShapeCompat but work at runtime
   server.tool(
     "generate_video",
-    "Generate a premium product launch video from any landing page URL. Extracts page content using Tabstack API, plans a storyboard with Gemini AI, and renders an HD MP4 video using Remotion.",
+    "Generate a premium product launch video from any landing page URL. Uses a narrative storytelling structure (Hook → Problem → Solution → Results → CTA). Extracts page content using Tabstack API, plans a narrative storyboard with AI (Gemini or Claude — configurable), generates AI music with WaveSpeed, optional TTS voiceover (Gemini only), and renders an HD MP4 video. Max 15 seconds.",
     paramsSchema,
-    async ({ url, outputPath, audioMood }: { url: string; outputPath?: string; audioMood?: string }) => {
+    async ({ url, outputPath, aiProvider, audioMood, narration }: { url: string; outputPath?: string; aiProvider?: string; audioMood?: string; narration?: boolean }) => {
       try {
         const result = await generateVideo({
           url,
           outputPath: outputPath || "./out/video.mp4",
+          aiProvider,
           audioMoodOverride: audioMood,
+          skipNarration: !narration,
         });
 
         return {
@@ -49,13 +63,15 @@ function createServer(): McpServer {
                 "Video generated successfully!",
                 "",
                 `Output: ${result.outputPath}`,
+                `AI Provider: ${result.aiProvider}`,
                 `Duration: ${result.durationSeconds.toFixed(1)}s`,
                 `Scenes: ${result.sceneCount}`,
                 `Audio: ${result.audioMood}${result.audioGenerated ? " (AI-generated)" : " (static)"}`,
+                result.narrationGenerated ? "Narration: AI voiceover" : "",
                 "",
                 "Storyboard:",
                 result.storyboardSummary,
-              ].join("\n"),
+              ].filter(Boolean).join("\n"),
             },
           ],
         };

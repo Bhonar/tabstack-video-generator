@@ -8,22 +8,39 @@ import type { CSSProperties } from "react";
 
 // ── Spring configs ──
 
+/** Standard entrance — snappy with slight overshoot */
 export const SPRING_CONFIG = {
-  damping: 12,
-  stiffness: 170,
-  mass: 0.8,
-};
-
-export const FAST_SPRING = {
-  damping: 15,
+  damping: 10,
   stiffness: 200,
   mass: 0.6,
 };
 
+/** Fast snap — for staggered items, punchy reveals */
+export const FAST_SPRING = {
+  damping: 12,
+  stiffness: 280,
+  mass: 0.4,
+};
+
+/** Gentle float — for secondary text, subtle elements */
 export const GENTLE_SPRING = {
-  damping: 18,
+  damping: 16,
   stiffness: 120,
-  mass: 1,
+  mass: 0.8,
+};
+
+/** Dramatic slam — for headlines, hero moments */
+export const SLAM_SPRING = {
+  damping: 8,
+  stiffness: 300,
+  mass: 0.5,
+};
+
+/** Elastic bounce — for icons, badges, buttons */
+export const BOUNCE_SPRING = {
+  damping: 6,
+  stiffness: 180,
+  mass: 0.7,
 };
 
 // ── Hooks ──
@@ -72,20 +89,20 @@ export function useStaggeredEntrance(
 export function useAnimatedCounter(
   targetValue: number,
   startFrame = 0,
-  durationFrames = 45,
+  durationFrames = 35,
 ) {
   const frame = useCurrentFrame();
   const progress = Math.min(
     Math.max((frame - startFrame) / durationFrames, 0),
     1,
   );
-  // Ease-out cubic
-  const eased = 1 - Math.pow(1 - progress, 3);
+  // Ease-out quartic — faster start, dramatic snap to final value
+  const eased = 1 - Math.pow(1 - progress, 4);
   return Math.round(targetValue * eased);
 }
 
-/** Fade-out helper for the last N frames of a scene. */
-export function useFadeOut(fadeFrames = 15): number {
+/** Fade-out helper for the last N frames of a scene — fast cut, not slow fade */
+export function useFadeOut(fadeFrames = 8): number {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const fadeStart = durationInFrames - fadeFrames;
@@ -93,4 +110,11 @@ export function useFadeOut(fadeFrames = 15): number {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+}
+
+/** Pulsing glow intensity — use for buttons, badges, highlights */
+export function usePulse(frequency = 0.15, startFrame = 0): number {
+  const frame = useCurrentFrame();
+  const phase = Math.max(0, frame - startFrame);
+  return (Math.sin(phase * frequency) + 1) / 2; // 0→1
 }
