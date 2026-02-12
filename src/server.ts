@@ -90,7 +90,6 @@ function createServer(): McpServer {
       .describe(
         "Product-specific lyrics with [Verse 1], [Chorus] structure. Example: '[Verse 1]\\nProduct line here\\n\\n[Chorus]\\nCatchy line'"
       ),
-    duration: z.number().min(5).max(30).describe("Audio duration in seconds (5-30)"),
   };
 
   // @ts-expect-error — zod type compatibility
@@ -98,7 +97,7 @@ function createServer(): McpServer {
     "generate_audio",
     "Generate AI background music using WaveSpeed Minimax Music 2.5. Creates dramatic, beat-synced music for product videos. Requires WAVESPEED_API_KEY environment variable.",
     generateAudioSchema,
-    async ({ prompt, lyrics, duration }: { prompt: string; lyrics?: string; duration: number }) => {
+    async ({ prompt, lyrics }: { prompt: string; lyrics?: string }) => {
       try {
         if (!isAudioGenerationAvailable()) {
           return {
@@ -112,7 +111,7 @@ function createServer(): McpServer {
           };
         }
 
-        const result = await generateAudio({ prompt, lyrics: lyrics || "", duration });
+        const result = await generateAudio({ prompt, lyrics: lyrics || "" });
 
         return {
           content: [
@@ -121,7 +120,7 @@ function createServer(): McpServer {
               text: JSON.stringify(
                 {
                   audioFile: `public/audio/${result.fileName}`,
-                  duration: result.duration,
+                  durationMs: result.durationMs,
                   fileName: result.fileName,
                 },
                 null,

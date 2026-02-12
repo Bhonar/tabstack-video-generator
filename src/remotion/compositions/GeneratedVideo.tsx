@@ -6,7 +6,7 @@ import { AbsoluteFill } from "remotion";
  */
 
 interface Props {
-  colorTheme: {
+  colorTheme?: {
     primary: string;
     secondary: string;
     background: string;
@@ -16,14 +16,20 @@ interface Props {
 }
 
 export default function GeneratedVideo({ colorTheme }: Props) {
+  const theme = colorTheme || {
+    primary: "#4F46E5",
+    secondary: "#E0E7FF",
+    background: "#FFFFFF",
+    text: "#0F172A",
+  };
   return (
     <AbsoluteFill
       style={{
-        background: colorTheme.background,
+        background: theme.background,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: colorTheme.text,
+        color: theme.text,
         fontSize: 48,
         fontWeight: "bold",
       }}
