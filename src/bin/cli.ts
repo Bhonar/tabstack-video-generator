@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * @tabstack/video-generator — Unified entry point
+ * @tabstack/video-generator — MCP Server for AI Video Generation
  *
  * Usage modes:
  *   tabstack-video                       → MCP server (STDIO) — used by `claude mcp add`
  *   tabstack-video --setup               → Interactive setup wizard
- *   tabstack-video --url <url> [opts]    → CLI mode, generates video directly
  *   tabstack-video --help                → Show usage
+ *
+ * Note: This is an MCP + Skill tool. Use Claude Code to generate videos.
  */
 
 import fs from "fs";
@@ -51,11 +52,14 @@ async function main() {
     return;
   }
 
-  // --url <url> → CLI mode
-  const url = getFlagValue("--url");
-  if (url) {
-    await runCli(url);
-    return;
+  // --url flag → Show deprecation message
+  if (hasFlag("--url")) {
+    console.error(`${RED}${BOLD}CLI mode has been removed.${RESET}\n`);
+    console.error(`This is now an ${BOLD}MCP + Skill${RESET} tool for Claude Code.\n`);
+    console.error(`${BOLD}How to use:${RESET}`);
+    console.error(`  1. Add MCP server: ${CYAN}claude mcp add tabstack-video -e TABSTACK_API_KEY=...${RESET}`);
+    console.error(`  2. In Claude Code, ask: ${CYAN}"Generate a video for https://example.com"${RESET}\n`);
+    process.exit(1);
   }
 
   // No flags → MCP server mode (what `claude mcp add` expects)
@@ -63,99 +67,7 @@ async function main() {
   await startServer();
 }
 
-// ── CLI video generation mode ──
-
-async function runCli(url: string) {
-  // Validate URL
-  try {
-    new URL(url);
-  } catch {
-    console.error(`${RED}Error: Invalid URL "${url}"${RESET}`);
-    process.exit(1);
-  }
-
-  // Validate AI provider
-  const VALID_PROVIDERS = ["gemini", "claude"];
-  const aiProvider = getFlagValue("--ai");
-  if (aiProvider && !VALID_PROVIDERS.includes(aiProvider)) {
-    console.error(
-      `${RED}Error: Invalid AI provider "${aiProvider}". Must be one of: ${VALID_PROVIDERS.join(", ")}${RESET}`,
-    );
-    process.exit(1);
-  }
-
-  // Validate audio mood
-  const VALID_MOODS = ["cinematic-pop", "cinematic-epic", "cinematic-dark"];
-  const audioMood = getFlagValue("--audio-mood");
-  if (audioMood && !VALID_MOODS.includes(audioMood)) {
-    console.error(
-      `${RED}Error: Invalid audio mood "${audioMood}". Must be one of: ${VALID_MOODS.join(", ")}${RESET}`,
-    );
-    process.exit(1);
-  }
-
-  const outputPath = getFlagValue("--output") || "./out/video.mp4";
-  const noOpen = hasFlag("--no-open");
-  const noAiAudio = hasFlag("--no-ai-audio");
-  const noNarration = hasFlag("--no-narration");
-  const narration = hasFlag("--narration");
-  const debug = hasFlag("--debug");
-
-  // Pre-flight
-  console.log(`\n${BOLD}Pre-flight checks${RESET}`);
-  const { runPreflight, formatPreflightReport } = await import("../lib/preflight.js");
-  const preflight = await runPreflight(aiProvider);
-  console.log(formatPreflightReport(preflight));
-
-  if (!preflight.ok) {
-    console.error(
-      `\n${RED}Cannot continue. Run "npx @tabstack/video-generator --setup" first.${RESET}\n`,
-    );
-    process.exit(1);
-  }
-
-  // Generate
-  console.log(`\n${BOLD}Generating video for ${url}${RESET}`);
-  console.log("-".repeat(50));
-
-  const { setOutputMode } = await import("../lib/progress.js");
-  setOutputMode("cli");
-
-  const { generateVideo } = await import("../tools/generate-video.js");
-  const startTime = Date.now();
-
-  // skipNarration is true by default, unless --narration is explicitly passed
-  const skipNarration = noNarration || !narration;
-
-  const result = await generateVideo({
-    url,
-    outputPath,
-    audioMoodOverride: audioMood,
-    skipAiAudio: noAiAudio,
-    skipNarration,
-    aiProvider,
-    debug,
-  });
-
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-
-  // Done
-  console.log("");
-  console.log(
-    `${GREEN}${BOLD}Done!${RESET} Video saved to: ${BOLD}${result.outputPath}${RESET}`,
-  );
-  console.log(
-    `${DIM}  AI: ${result.aiProvider} | Duration: ${result.durationSeconds.toFixed(1)}s | Scenes: ${result.sceneCount} | Audio: ${result.audioMood}${result.audioGenerated ? " (AI)" : ""}${result.narrationGenerated ? " + narration" : ""} | Rendered in ${elapsed}s${RESET}`,
-  );
-
-  // Auto-open
-  if (!noOpen) {
-    console.log(`\nOpening video...`);
-    openFile(result.outputPath);
-  }
-
-  console.log("");
-}
+// CLI mode has been removed - MCP + Skill only
 
 // ── Load .env.local ──
 
@@ -205,48 +117,44 @@ function openFile(filepath: string): void {
 function printUsage(): void {
   console.log(`
 ${BOLD}@tabstack/video-generator${RESET}
-Turn any landing page into a premium product launch video.
+${CYAN}MCP + Skill${RESET} tool for Claude Code to turn landing pages into videos.
 
-${BOLD}Install:${RESET}
+${BOLD}Installation:${RESET}
   ${CYAN}claude mcp add tabstack-video${RESET} \\
-    ${DIM}-e TABSTACK_API_KEY=...${RESET} \\
-    ${DIM}-e GEMINI_API_KEY=...${RESET} \\
-    ${DIM}-e ANTHROPIC_API_KEY=... ${RESET}${DIM}(optional, for Claude AI)${RESET} \\
+    ${DIM}-e TABSTACK_API_KEY=sk-...${RESET} \\
     ${DIM}-e WAVESPEED_API_KEY=... ${RESET}${DIM}(optional, for AI music)${RESET} \\
     ${DIM}-- npx @tabstack/video-generator${RESET}
 
 ${BOLD}Usage:${RESET}
-  npx @tabstack/video-generator --setup               Interactive setup wizard
-  npx @tabstack/video-generator --url <url> [options]  Generate a video
-  npx @tabstack/video-generator                        Start MCP server (STDIO)
+  npx @tabstack/video-generator ${DIM}# Start MCP server (STDIO)${RESET}
+  npx @tabstack/video-generator --setup ${DIM}# Interactive API key setup${RESET}
+  npx @tabstack/video-generator --help ${DIM}# Show this help${RESET}
 
-${BOLD}CLI Options:${RESET}
-  --url <url>           Landing page URL ${DIM}(required for CLI mode)${RESET}
-  --output <path>       Output file path ${DIM}(default: ./out/video.mp4)${RESET}
-  --ai <provider>       AI provider: gemini | claude ${DIM}(auto-detected from keys)${RESET}
-  --audio-mood <mood>   ${DIM}cinematic-pop | cinematic-epic | cinematic-dark${RESET}
-  --narration           Enable AI voiceover narration ${DIM}(Gemini only — requires Gemini TTS)${RESET}
-  --no-narration        Disable narration ${DIM}(default)${RESET}
-  --no-ai-audio         Skip AI music generation, use static audio files
-  --no-open             Don't auto-open the video after rendering
-  --debug               Print full storyboard JSON for debugging
-  --help                Show this help message
+${BOLD}How It Works:${RESET}
+  ${BOLD}1.${RESET} MCP server provides tools:
+     • ${CYAN}extract_page_data${RESET} - Extract content, colors, fonts from URL
+     • ${CYAN}generate_audio${RESET} - Generate AI background music
+     • ${CYAN}render_video${RESET} - Render React/Remotion code to MP4
 
-${BOLD}AI Providers:${RESET}
-  ${CYAN}gemini${RESET}  Google Gemini 2.5 Flash — storyboard planning + TTS narration
-  ${CYAN}claude${RESET}  Anthropic Claude Sonnet — storyboard planning (no TTS)
+  ${BOLD}2.${RESET} Claude Code orchestrates the workflow:
+     • Calls extract_page_data to get brand info
+     • ${BOLD}Generates React/Remotion video code itself${RESET}
+     • Calls render_video to create the final MP4
 
-  Auto-detection: prefers Claude if ANTHROPIC_API_KEY is set, else Gemini.
-  Override with: --ai <provider> or VIDEOGEN_AI_PROVIDER env var.
+  ${BOLD}3.${RESET} No external AI APIs needed - Claude Code does the creative work!
 
-${BOLD}Examples:${RESET}
-  npx @tabstack/video-generator --url https://stripe.com
-  npx @tabstack/video-generator --url https://vercel.com --ai claude
-  npx @tabstack/video-generator --url https://vercel.com --ai gemini --narration
-  npx @tabstack/video-generator --url https://linear.app --output ./linear.mp4 --no-open
+${BOLD}Example Usage in Claude Code:${RESET}
+  ${CYAN}"Generate a video for https://stripe.com"${RESET}
+  ${CYAN}"Make a product video for https://linear.app with AI music"${RESET}
+  ${CYAN}"Create a launch video for tabstack.ai"${RESET}
 
-${BOLD}Claude Code:${RESET}
-  Just ask: "Generate a video for https://example.com"
+${BOLD}Required Keys:${RESET}
+  ${BOLD}TABSTACK_API_KEY${RESET} - Get at https://tabstack.ai
+  ${BOLD}WAVESPEED_API_KEY${RESET} - Optional, for AI music generation
+
+${BOLD}Learn More:${RESET}
+  Documentation: ${CYAN}https://github.com/tabstack/video-generator${RESET}
+  TabStack API: ${CYAN}https://tabstack.ai${RESET}
 `);
 }
 
