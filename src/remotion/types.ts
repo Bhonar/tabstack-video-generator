@@ -5,10 +5,11 @@ export const VIDEO_CONFIG = {
   height: 1080,
 } as const;
 
-// ── Color theme extracted/generated from the landing page ──
+// ── Color theme extracted from the landing page ──
 export interface ColorTheme {
   primary: string;
   secondary: string;
+  tertiary: string;
   accent: string;
   background: string;
   text: string;

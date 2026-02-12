@@ -23,6 +23,7 @@ export interface ExtractedPageData {
   colors: {
     primary: string;
     secondary: string;
+    tertiary: string;
     background: string;
   };
   socialProof: string;
@@ -128,12 +129,25 @@ export const PAGE_EXTRACTION_SCHEMA = {
     colors: {
       type: "object",
       properties: {
-        primary: { type: "string", description: "Primary brand color as hex, e.g. '#FF97EA'" },
-        secondary: { type: "string", description: "Secondary color as hex" },
-        background: { type: "string", description: "Main background color as hex" },
+        primary: {
+          type: "string",
+          description: "Primary brand color as hex code (e.g. '#4F46E5'). Look for: button colors, logo colors, brand accent colors, link colors, or the most prominent non-black/white color used throughout the page. MUST be a hex code starting with #."
+        },
+        secondary: {
+          type: "string",
+          description: "Secondary brand color as hex code (e.g. '#E0E7FF'). Look for: secondary buttons, subtle backgrounds, hover states, or complementary colors to primary. MUST be a hex code starting with #."
+        },
+        tertiary: {
+          type: "string",
+          description: "Tertiary/accent color as hex code (e.g. '#F59E0B'). Look for: highlights, badges, success states, or any third prominent color. MUST be a hex code starting with #."
+        },
+        background: {
+          type: "string",
+          description: "Main page background color as hex code (e.g. '#FFFFFF' or '#0F172A'). The dominant background color of the page. MUST be a hex code starting with #."
+        },
       },
-      required: ["primary", "secondary", "background"],
-      description: "The dominant colors from the page design",
+      required: ["primary", "secondary", "tertiary", "background"],
+      description: "Brand colors extracted from the page design. Extract actual hex codes from CSS, not descriptions. Look at buttons, headings, logos, and visual elements to identify the brand's color palette.",
     },
     socialProof: {
       type: "string",
