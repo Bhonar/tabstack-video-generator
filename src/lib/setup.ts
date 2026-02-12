@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { runPreflight, formatPreflightReport, getPackageRoot } from "./preflight.js";
-import { hasRequiredKeys, hasWaveSpeedKey, hasAnthropicKey } from "./defaults.js";
+import { getTabstackKey, hasWaveSpeedKey } from "./defaults.js";
 
 // ── ANSI ──
 
@@ -86,47 +86,30 @@ export async function runSetup(): Promise<void> {
     output: process.stdout,
   });
 
-  // Required: TabStack
-  if (process.env.TABSTACK_API_KEY) {
-    print(`      TabStack key ${GREEN}ready${RESET}`);
+  // Required: TabStack API key
+  if (getTabstackKey()) {
+    print(`      TabStack API key ${GREEN}ready${RESET}`);
   } else {
-    print(`      ${YELLOW}TABSTACK_API_KEY is not set${RESET}`);
-    print(`      ${DIM}Get your free key at: https://console.tabstack.ai${RESET}`);
+    print(`      ${YELLOW}TABSTACK_API_KEY is not set (REQUIRED)${RESET}`);
+    print(`      ${DIM}Get your free key at: https://tabstack.ai${RESET}`);
     print(`        ${BOLD}export TABSTACK_API_KEY=ts_xxx${RESET}`);
     print("");
   }
 
-  // AI Providers (at least one required)
-  print("");
-  print(`      ${BOLD}AI Providers${RESET} ${DIM}(at least one required)${RESET}`);
-  if (process.env.GEMINI_API_KEY) {
-    print(`      Gemini key ${GREEN}ready${RESET} — storyboard planning + TTS narration`);
-  } else {
-    print(`      ${DIM}GEMINI_API_KEY not set${RESET}`);
-    print(`      ${DIM}Get your free key at: https://aistudio.google.com/apikey${RESET}`);
-    print(`        ${BOLD}export GEMINI_API_KEY=AIza...${RESET}`);
-  }
-  if (hasAnthropicKey()) {
-    print(`      Anthropic key ${GREEN}ready${RESET} — storyboard planning (no TTS)`);
-  } else {
-    print(`      ${DIM}ANTHROPIC_API_KEY not set${RESET}`);
-    print(`      ${DIM}Get your key at: https://console.anthropic.com/settings/keys${RESET}`);
-    print(`        ${BOLD}export ANTHROPIC_API_KEY=sk-ant-...${RESET}`);
-  }
-
-  if (!hasRequiredKeys()) {
-    print("");
-    print(`      ${YELLOW}At least one AI provider key (Gemini or Anthropic) is needed.${RESET}`);
-  }
-
+  // Optional: WaveSpeed for AI music
   print("");
   if (hasWaveSpeedKey()) {
-    print(`      WaveSpeed key ${GREEN}ready${RESET} — AI-generated music enabled`);
+    print(`      WaveSpeed API key ${GREEN}ready${RESET} — AI-generated music enabled`);
   } else {
-    print(`      ${DIM}WaveSpeed key not available — using static placeholder audio${RESET}`);
-    print(`      ${DIM}To enable AI music: export WAVESPEED_API_KEY=ws_xxx${RESET}`);
-    print("");
+    print(`      ${DIM}WAVESPEED_API_KEY not set (optional) — using static placeholder audio${RESET}`);
+    print(`      ${DIM}To enable AI music generation: export WAVESPEED_API_KEY=ws_xxx${RESET}`);
+    print(`      ${DIM}Get your key at: https://wavespeed.ai${RESET}`);
   }
+
+  print("");
+  print(`      ${BOLD}Note:${RESET} ${DIM}This is an MCP + Skill tool.${RESET}`);
+  print(`      ${DIM}Claude Code generates video code directly - no external AI API needed!${RESET}`);
+  print("");
 
   rl.close();
 
@@ -138,20 +121,25 @@ export async function runSetup(): Promise<void> {
   // ── Done ──
   print("");
   if (result.ok) {
-    print(`${GREEN}${BOLD}Setup complete! Ready to generate videos.${RESET}`);
+    print(`${GREEN}${BOLD}Setup complete! Ready to generate videos with Claude Code.${RESET}`);
   } else {
     print(`${YELLOW}${BOLD}Setup finished with issues (see above).${RESET}`);
     print(`${DIM}Set the missing keys and install FFmpeg, then try again.${RESET}`);
   }
   print("");
-  print(`${BOLD}Usage:${RESET}`);
-  print(`  ${CYAN}CLI:${RESET}        npx @tabstack/video-generator --url https://example.com`);
-  print(`  ${CYAN}With AI:${RESET}    npx @tabstack/video-generator --url https://example.com --ai claude`);
-  print(`  ${CYAN}Claude:${RESET}     claude mcp add tabstack-video \\`);
-  print(`                -e TABSTACK_API_KEY=... \\`);
-  print(`                -e GEMINI_API_KEY=... \\`);
-  print(`                -e ANTHROPIC_API_KEY=... \\`);
-  print(`                -- npx @tabstack/video-generator`);
-  print(`  ${CYAN}Ask Claude:${RESET} "Generate a video for https://example.com"`);
+  print(`${BOLD}How to Use (MCP + Skill mode):${RESET}`);
+  print(`  ${CYAN}1. Install MCP server:${RESET}`);
+  print(`     claude mcp add tabstack-video \\`);
+  print(`       -e TABSTACK_API_KEY=${getTabstackKey() || "ts_xxx"} \\`);
+  if (hasWaveSpeedKey()) {
+    print(`       -e WAVESPEED_API_KEY=ws_xxx \\`);
+  }
+  print(`       -- npx @tabstack/video-generator`);
+  print("");
+  print(`  ${CYAN}2. Ask Claude Code:${RESET}`);
+  print(`     "Generate a video for https://stripe.com"`);
+  print(`     "Create a product video for https://linear.app with AI music"`);
+  print("");
+  print(`  ${DIM}Claude Code will extract page data, generate React code, and render the video!${RESET}`);
   print("");
 }
