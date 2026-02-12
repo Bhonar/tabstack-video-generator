@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "node:url";
-import { hasRequiredKeys, hasWaveSpeedKey, resolveAiProvider } from "./defaults.js";
+import { getTabstackKey, hasWaveSpeedKey } from "./defaults.js";
 
 // ── Types ──
 
@@ -35,14 +35,10 @@ export async function runPreflight(aiProvider?: string): Promise<PreflightResult
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Resolve which provider will be used
-  const provider = resolveAiProvider(aiProvider);
-
-  // Check 1: Required API keys (TabStack + AI provider)
-  if (!hasRequiredKeys(provider)) {
-    const keyName = provider === "claude" ? "ANTHROPIC_API_KEY" : "GEMINI_API_KEY";
+  // Check 1: TABSTACK_API_KEY (required for page extraction)
+  if (!getTabstackKey()) {
     errors.push(
-      `Required API keys missing for ${provider} provider. Ensure TABSTACK_API_KEY and ${keyName} are set. Run: npx @tabstack/video-generator --setup`,
+      "TABSTACK_API_KEY is not set. Get your key at https://tabstack.ai and run: npx @tabstack/video-generator --setup",
     );
   }
 
@@ -67,14 +63,7 @@ export async function runPreflight(aiProvider?: string): Promise<PreflightResult
     );
   }
 
-  // Check 4: Provider-specific warnings
-  if (provider === "claude") {
-    warnings.push(
-      "TTS narration is not available with the Claude provider. Use --ai gemini for voiceover narration.",
-    );
-  }
-
-  // Check 5: Audio files
+  // Check 4: Audio files
   const audioDir = path.resolve(getPackageRoot(), "public/audio");
   try {
     const files = fs.readdirSync(audioDir).filter((f) => f.endsWith(".mp3"));
