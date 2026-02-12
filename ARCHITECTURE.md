@@ -1,70 +1,261 @@
-# TabStack Video Generator — Architecture & Overview
+# TabStack Video Generator — MCP + Skill Architecture
 
-Turn any landing page URL into a polished product launch video. One command.
+Turn any landing page URL into a premium product launch video using **Claude Code + MCP tools**.
 
 ## Goal
 
-A dead-simple MCP + CLI tool that lets founders, marketers, and anyone turn a landing page URL into a professional product launch video — the kind an agency charges thousands to produce. Type a URL, get an HD video with motion graphics and AI-generated music.
+An **MCP + Skill** tool where Claude Code orchestrates video generation by calling MCP tools and generating React/Remotion code itself. No external AI APIs needed for code generation.
 
-Any founder using Claude Code can just say *"Generate a video for my site"* and get back a launch video in minutes.
+User says *"Generate a video for https://stripe.com"* → Claude Code extracts data, generates React code, and renders a premium HD video with AI music.
 
-## Pipeline (5 Steps)
+## Architecture: MCP + Skill Pattern
+
+**MCP (Model Context Protocol)** = Server exposes atomic tools
+**Skill** = Markdown guide teaching Claude Code how to use those tools
+**Claude Code** = AI assistant that orchestrates everything + generates React code
 
 ```
-URL
+┌──────────────────────────────────────────────────────────────┐
+│ User in Claude Code                                          │
+│ "Generate a video for https://stripe.com"                    │
+└────────────────┬─────────────────────────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Claude Code (AI Assistant)                                   │
+│ - Reads .skills/generate-video.md for workflow              │
+│ - Calls MCP tools for data extraction                       │
+│ - Generates React/Remotion code itself (creative work)      │
+│ - Syncs animations to music beats                           │
+└────────────────┬─────────────────────────────────────────────┘
+                 │
+                 ▼
+         ┌───────┴────────┐
+         │                │
+    ┌────▼─────┐    ┌─────▼────┐    ┌────────────┐
+    │ extract  │    │ generate │    │   render   │
+    │   page   │    │  audio   │    │   video    │
+    │   data   │    │ (optional)│   │            │
+    └────┬─────┘    └─────┬────┘    └─────┬──────┘
+         │                │                │
+         │                │                │
+    ┌────▼─────┐    ┌─────▼────┐    ┌─────▼──────┐
+    │ TabStack │    │WaveSpeed │    │  Remotion  │
+    │    +     │    │ Minimax  │    │  Renderer  │
+    │Playwright│    │ Music    │    │  + FFmpeg  │
+    └──────────┘    └──────────┘    └────────────┘
+```
+
+## Pipeline (4 Steps)
+
+```
+URL → "https://stripe.com"
  ↓
-Step 1 → TabStack API extracts structured data
-         (title, tagline, features, pricing, stats, brand colors, CTA)
+Step 1: extract_page_data (MCP Tool)
+        ├─ TabStack /extract/json → { title, features, pricing }
+        ├─ Playwright browser automation → { colors, fonts }
+        └─ TabStack /automate (optional) → screenshot
+
+        Returns: {
+          title: "Stripe",
+          tagline: "Payment infrastructure for the internet",
+          features: [{ title: "Payments", desc: "..." }],
+          colors: { primary: "#635BFF", secondary: "#0A2540", ... },
+          fonts: { heading: "Söhne", body: "Helvetica" }
+        }
  ↓
-Step 2 → TabStack API captures a hero screenshot
+Step 2: generate_audio (MCP Tool - OPTIONAL)
+        WaveSpeed Minimax Music 2.5 → AI-generated music
+        ├─ POST /v1/music/generate (prompt + lyrics)
+        ├─ Poll task status
+        ├─ Download MP3 → public/audio/generated-xxx.mp3
+        └─ Analyze beats (aubio) → beat times in ms
+
+        Returns: {
+          audioFile: "generated-1707523200.mp3",
+          durationMs: 12000,
+          bpm: 128,
+          beatTimes: [0, 468, 937, 1406, ...] // ms timestamps
+        }
  ↓
-Step 3 → Gemini 2.5 Flash plans the storyboard
-         (scene order, timing, transitions, color theme, audio mood,
-          audio prompt & lyrics for music generation)
+Step 3: CLAUDE CODE GENERATES REACT CODE
+        Using data from Steps 1 & 2:
+        ├─ Hardcode colors, fonts, content into component
+        ├─ Convert beat times to frame numbers (ms → frames @ 30fps)
+        ├─ Design 4-6 scenes with modern UI (glassmorphism, gradients)
+        ├─ Sync animations to beat frames
+        └─ Output complete React/Remotion component code
+
+        Example:
+        ```tsx
+        const colors = { primary: "#635BFF", ... }; // from extraction
+        const beatFrames = [0, 14, 28, 42, ...]; // from audio analysis
+
+        // Pulse on beat
+        transform: `scale(${beatFrames.includes(frame) ? 1.1 : 1})`
+        ```
  ↓
-Step 4 → WaveSpeed Minimax Music 2.5 generates unique background music
-         (submit job → poll every 3s → download MP3)
-         Falls back to static audio if key missing or API fails
- ↓
-Step 5 → Remotion renders final 1920×1080 MP4
-         (React components → motion graphics + transitions + audio → H.264)
- ↓
-video.mp4 (20–35 seconds, auto-opens)
+Step 4: render_video (MCP Tool)
+        Takes React code → MP4
+        ├─ Save code to src/remotion/compositions/GeneratedVideo.tsx
+        ├─ Build TypeScript (npm run build)
+        ├─ Bundle with Remotion (Webpack)
+        ├─ Render frames (headless browser → PNGs)
+        ├─ Encode with FFmpeg (PNGs + audio → H.264 MP4)
+        └─ Output: ./out/stripe-video.mp4 (1920x1080, 30fps)
 ```
 
 ## Tech Stack
 
 | Tech | Role | Why |
 |------|------|-----|
-| **TabStack API** | Page data extraction + screenshot | Extracts structured JSON from any URL with a schema, plus automated screenshots. No scraping headaches. |
-| **Gemini 2.5 Flash** | AI storyboard planner | Fast, cheap, great at structured JSON output. Plans scene order, timing, colors. Also writes audio prompt + lyrics. Free tier. |
-| **WaveSpeed API** | Audio generation proxy | Cheaper than calling Minimax directly. Simple REST wrapper around Minimax Music 2.5. Async job model (submit → poll → download). |
-| **Minimax Music 2.5** | Music model | Generates full songs with lyrics support. Perfect for branded background tracks. Accessed through WaveSpeed for cost. |
-| **Remotion** | Video rendering engine | React-based — scenes are React components, renders to MP4 via FFmpeg. Programmatic, deterministic, no video editor needed. |
-| **MCP** | Claude Code integration | STDIO server so Claude calls `generate_video` as a tool. One `claude mcp add` command to set up. |
-| **FFmpeg** | Video encoding | Required by Remotion. Encodes the final H.264 MP4. |
+| **TabStack API** | Page content extraction | Extracts structured JSON (title, features, pricing) from any URL using AI. Saves scraping hassle. |
+| **Playwright** | Brand color/font extraction | Launches headless Chrome, executes JS to get computed CSS colors/fonts. More reliable than TabStack for branding. |
+| **Claude Code** | React code generation | The AI assistant (you!) that generates premium React/Remotion components. No external AI API needed! |
+| **WaveSpeed API** | AI music generation | REST wrapper for Minimax Music 2.5. Submit prompt → poll → get MP3 + beat analysis. |
+| **Minimax Music 2.5** | Music model | Generates full songs with lyrics. Perfect for branded background tracks. Accessed via WaveSpeed. |
+| **aubio** | Beat detection | Audio analysis library. Detects tempo (BPM) and beat timestamps from generated MP3. |
+| **Remotion** | Video rendering | React-based video engine. Scenes are React components, renders to MP4 via FFmpeg. Programmatic, deterministic. |
+| **MCP** | Tool protocol | STDIO server exposes tools to Claude Code. `claude mcp add` to install. |
+| **FFmpeg** | Video encoding | Required by Remotion. Encodes final H.264 MP4 from rendered frames + audio. |
 
 ## API Keys
 
-| Key | Source | Required | Cost |
-|-----|--------|----------|------|
-| `TABSTACK_API_KEY` | console.tabstack.ai | Yes | Free tier |
-| `GEMINI_API_KEY` | aistudio.google.com | Yes | Free tier |
-| `WAVESPEED_API_KEY` | wavespeed.ai | No | Free tier — enables AI music |
+| Key | Source | Required | Cost | Purpose |
+|-----|--------|----------|------|---------|
+| `TABSTACK_API_KEY` | tabstack.ai | ✅ Yes | Free tier | Page data extraction |
+| `WAVESPEED_API_KEY` | wavespeed.ai | ⚠️ Optional | Free tier | AI music generation |
 
-Users bring their own keys via env vars or `-e` flags.
+**No AI provider keys needed!** Claude Code generates React code directly (no Gemini/Claude API calls).
+
+Users set keys via env vars or MCP `-e` flags.
+
+## Beat Synchronization 🎵
+
+**Problem**: Animations must hit on music beats for professional feel.
+
+**Solution**: 3-step beat sync process:
+
+### 1. Beat Detection (aubio library)
+```typescript
+import aubio from 'aubio';
+
+// After downloading MP3 from WaveSpeed:
+const beatDetector = new aubio.Tempo(1024, 512, sampleRate);
+const beatTimes = []; // milliseconds
+
+audioBuffer.forEach((sample, time) => {
+  if (beatDetector.do(sample)) {
+    beatTimes.push(time * 1000); // convert to ms
+  }
+});
+
+// Result: [0, 468, 937, 1406, 1875, 2343, ...] ms
+//          ^    ^    ^     ^     ^     ^
+//         beat beat beat  beat  beat  beat
+// @ 128 BPM = 468ms per beat
+```
+
+### 2. Convert to Frame Numbers (30fps)
+```typescript
+const fps = 30;
+const beatFrames = beatTimes.map(ms => Math.round((ms / 1000) * fps));
+
+// beatTimes:  [0, 468, 937, 1406, 1875, ...]  ms
+// beatFrames: [0,  14,  28,   42,   56, ...]  frames
+```
+
+### 3. Bake into React Code
+```typescript
+export default function GeneratedVideo() {
+  const frame = useCurrentFrame();
+
+  // Hardcoded beat frames from audio analysis
+  const beatFrames = [0, 14, 28, 42, 56, 70, 84, 98, ...];
+
+  // Method 1: Snap to beat (instant)
+  const isBeat = beatFrames.some(b => Math.abs(frame - b) < 2);
+
+  // Method 2: Smooth pulse between beats
+  const nearestBeat = beatFrames.reduce((prev, curr) =>
+    Math.abs(curr - frame) < Math.abs(prev - frame) ? curr : prev
+  );
+  const beatProgress = (frame - nearestBeat) / 14; // 0-1 cycle
+  const pulseScale = 1 + Math.sin(beatProgress * Math.PI * 2) * 0.05;
+
+  return (
+    <div style={{
+      // Instant beat hit
+      transform: `scale(${isBeat ? 1.1 : 1})`,
+
+      // OR smooth pulse wave
+      transform: `scale(${pulseScale})`,
+
+      // Transition for smoothness
+      transition: "transform 0.1s ease-out"
+    }}>
+      Content
+    </div>
+  );
+}
+```
+
+### Synchronization Strategies
+
+**1. Scene Transitions on Beats**
+```typescript
+// Start new scenes on major beats
+<Sequence from={beatFrames[0]} durationInFrames={90}>  {/* Scene 1 */}
+<Sequence from={beatFrames[6]} durationInFrames={90}>  {/* Scene 2 */}
+<Sequence from={beatFrames[12]} durationInFrames={90}> {/* Scene 3 */}
+```
+
+**2. Stagger Feature Cards on Beats**
+```typescript
+features.map((feature, i) => {
+  const startBeat = beatFrames[2 + i]; // Start at 3rd beat, one per feature
+  return (
+    <div style={{
+      opacity: interpolate(frame, [startBeat, startBeat + 5], [0, 1]),
+      transform: `translateY(${interpolate(frame, [startBeat, startBeat + 10], [50, 0])}px)`
+    }}>
+      {feature.title}
+    </div>
+  );
+})
+```
+
+**3. Button Pulse on Every Beat**
+```typescript
+<div style={{
+  transform: `scale(${isBeat ? 1.08 : 1})`,
+  boxShadow: isBeat ? `0 0 60px ${colors.primary}` : `0 0 20px ${colors.primary}40`,
+  transition: "all 0.15s ease-out"
+}}>
+  Get Started →
+</div>
+```
+
+**4. Background Elements Drift on Beat**
+```typescript
+// Orbs/particles change direction on beat
+const driftX = beatFrames.filter(b => b <= frame).length * 30; // 30px per beat
+transform: `translateX(${driftX}px)`,
+```
 
 ## Architecture Decisions
 
-**Dynamic per-video audio** — The 5 static placeholder MP3s are identical 75,900-byte files (placeholders, not real music). Gemini now writes a custom audio prompt and lyrics tailored to each product, so every video gets unique music matching its brand.
+**MCP + Skill (not CLI + AI API)** — Claude Code generates React code directly, seeing full context and skill guidelines. No code truncation, no external API keys, better quality than Gemini/Claude API calls.
 
-**Graceful fallback** — WaveSpeed key is optional. If missing or API fails, the pipeline doesn't break — uses static placeholder audio. The `audioGenerated` boolean in the result tells you which path was taken.
+**Playwright for branding** — TabStack's browser automation was unreliable for color extraction. Running our own headless Chrome gives precise CSS computed colors and fonts.
 
-**Users bring their own keys** — Initially explored baking keys into the package (zero-config), but that bills every user's usage to one account. All 3 services have free tiers and the one-liner setup makes it painless.
+**Beat sync is critical** — Amateur videos ignore music rhythm. Professional ones hit beats. We analyze beats and bake frame numbers into code for perfect sync.
 
-**Bundle cache invalidation** — Remotion bundles `public/` on first render and caches it. When a new AI-generated MP3 downloads to `public/audio/`, the renderer invalidates that cache so the new file gets included.
+**Self-contained components** — All data (colors, fonts, content, beats) is hardcoded into the generated React code. Remotion renders without external dependencies.
 
-**Audio duration mismatch** — Minimax generates full songs (60s+), videos are 20–35s. The `AudioTrack` component's volume envelope (1s fade-in to 0.3, hold, 2s fade-out to 0) plus Remotion only playing for the video's duration handles this naturally — no trimming needed.
+**Graceful audio fallback** — WaveSpeed key is optional. If missing, videos render with static placeholder audio or silently. Production videos should always have AI music for best results.
+
+**Users bring keys** — Keeps billing clean. TabStack and WaveSpeed have generous free tiers.
 
 ## Video Scenes (Remotion Components)
 
