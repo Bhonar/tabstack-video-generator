@@ -1,13 +1,14 @@
 import React from "react";
 import { Composition } from "remotion";
 import { ProductLaunchVideo } from "./compositions/ProductLaunchVideo.js";
+import GeneratedVideo from "./compositions/GeneratedVideo.js";
 import type { ProductLaunchProps } from "./types.js";
 import { VIDEO_CONFIG } from "./types.js";
 
 // ── Default props for Remotion Studio preview ──
 const defaultProps: ProductLaunchProps = {
   productUrl: "https://tabstack.ai",
-  audioMood: "cinematic-classical",
+  audioMood: "cinematic-epic",
   audioBpm: 128,
   colorTheme: {
     primary: "#FF97EA",
@@ -82,17 +83,38 @@ function calculateTotalFrames(props: ProductLaunchProps): number {
 
 export const RemotionRoot: React.FC = () => {
   return (
-    <Composition
-      id="ProductLaunchVideo"
-      component={ProductLaunchVideo}
-      durationInFrames={calculateTotalFrames(defaultProps)}
-      fps={VIDEO_CONFIG.fps}
-      width={VIDEO_CONFIG.width}
-      height={VIDEO_CONFIG.height}
-      defaultProps={defaultProps}
-      calculateMetadata={({ props }) => ({
-        durationInFrames: calculateTotalFrames(props),
-      })}
-    />
+    <>
+      {/* Original composition with hardcoded scenes */}
+      <Composition
+        id="ProductLaunchVideo"
+        component={ProductLaunchVideo}
+        durationInFrames={calculateTotalFrames(defaultProps)}
+        fps={VIDEO_CONFIG.fps}
+        width={VIDEO_CONFIG.width}
+        height={VIDEO_CONFIG.height}
+        defaultProps={defaultProps}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: calculateTotalFrames(props),
+        })}
+      />
+
+      {/* AI-generated composition (replaced by MCP render_video tool) */}
+      <Composition
+        id="GeneratedVideo"
+        component={GeneratedVideo}
+        durationInFrames={360}
+        fps={VIDEO_CONFIG.fps}
+        width={VIDEO_CONFIG.width}
+        height={VIDEO_CONFIG.height}
+        defaultProps={{
+          colorTheme: {
+            primary: "#4F46E5",
+            secondary: "#E0E7FF",
+            background: "#FFFFFF",
+            text: "#0F172A",
+          },
+        }}
+      />
+    </>
   );
 };

@@ -1,95 +1,252 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { generateVideo } from "./tools/generate-video.js";
+import { extractStructured, captureScreenshot } from "./lib/tabstack-client.js";
+import { generateAudio, isAudioGenerationAvailable } from "./lib/audio-generator.js";
 import { runPreflight } from "./lib/preflight.js";
+import { writeFile } from "fs/promises";
+import path from "path";
+import { renderMedia, selectComposition } from "@remotion/renderer";
+import { bundle } from "@remotion/bundler";
 
 /**
- * Creates and configures the MCP server.
+ * Creates and configures the MCP server with granular tools
+ * for Claude Code + Skills to orchestrate video generation.
  */
 function createServer(): McpServer {
   const server = new McpServer({
     name: "tabstack-video-generator",
-    version: "1.0.0",
+    version: "2.0.0",
   });
 
-  // ── Main tool: generate a product launch video from a URL ──
-  const paramsSchema = {
-    url: z.string().url().describe("The landing page URL to create a video for"),
-    outputPath: z
-      .string()
-      .optional()
-      .describe("Output file path for the MP4. Defaults to ./out/video.mp4"),
-    aiProvider: z
-      .enum(["gemini", "claude"])
-      .optional()
-      .describe(
-        "AI provider for storyboard planning. 'gemini' (Google Gemini 2.5 Flash) or 'claude' (Anthropic Claude Sonnet). Auto-detected from available API keys if not specified.",
-      ),
-    audioMood: z
-      .enum(["cinematic-classical", "cinematic-electronic", "cinematic-pop", "cinematic-epic", "cinematic-dark"])
-      .optional()
-      .describe(
-        "Dramatic music style. Default: cinematic-classical (orchestral). Auto-detected from page content if not specified.",
-      ),
-    narration: z
-      .boolean()
-      .optional()
-      .describe(
-        "Enable AI voiceover narration using Gemini TTS. Only available with Gemini provider. Default: false.",
-      ),
+  // ── Tool 1: Extract page data via TabStack ──
+  const extractPageDataSchema = {
+    url: z.string().url().describe("The landing page URL to extract data from"),
   };
 
-  // @ts-expect-error — zod 3.22.3 types don't perfectly match ZodRawShapeCompat but work at runtime
+  // @ts-expect-error — zod type compatibility
   server.tool(
-    "generate_video",
-    "Generate a premium product launch video from any landing page URL. Uses a narrative storytelling structure (Hook → Problem → Solution → Results → CTA). Extracts page content using Tabstack API, plans a narrative storyboard with AI (Gemini or Claude — configurable), generates AI music with WaveSpeed, optional TTS voiceover (Gemini only), and renders an HD MP4 video. Max 15 seconds.",
-    paramsSchema,
-    async ({ url, outputPath, aiProvider, audioMood, narration }: { url: string; outputPath?: string; aiProvider?: string; audioMood?: string; narration?: boolean }) => {
+    "extract_page_data",
+    "Extract structured data from a landing page URL using TabStack API. Returns title, description, features, colors, logo, and other metadata for video generation.",
+    extractPageDataSchema,
+    async ({ url }: { url: string }) => {
       try {
-        const result = await generateVideo({
-          url,
-          outputPath: outputPath || "./out/video.mp4",
-          aiProvider,
-          audioMoodOverride: audioMood,
-          skipNarration: !narration,
-        });
+        const pageData = await extractStructured(url);
+
+        // Fix relative logoUrl → absolute URL
+        if (pageData.logoUrl && !pageData.logoUrl.startsWith("http")) {
+          try {
+            const origin = new URL(url).origin;
+            pageData.logoUrl = new URL(pageData.logoUrl, origin).href;
+          } catch {
+            pageData.logoUrl = "";
+          }
+        }
+
+        // Capture screenshot (non-blocking)
+        let screenshotUrl = null;
+        try {
+          screenshotUrl = await captureScreenshot(url);
+        } catch {
+          // Screenshot is optional
+        }
 
         return {
           content: [
             {
               type: "text" as const,
-              text: [
-                "Video generated successfully!",
-                "",
-                `Output: ${result.outputPath}`,
-                `AI Provider: ${result.aiProvider}`,
-                `Duration: ${result.durationSeconds.toFixed(1)}s`,
-                `Scenes: ${result.sceneCount}`,
-                `Audio: ${result.audioMood}${result.audioGenerated ? " (AI-generated)" : " (static)"}`,
-                result.narrationGenerated ? "Narration: AI voiceover" : "",
-                "",
-                "Storyboard:",
-                result.storyboardSummary,
-              ].filter(Boolean).join("\n"),
+              text: JSON.stringify(
+                {
+                  ...pageData,
+                  screenshotUrl,
+                  productUrl: url,
+                },
+                null,
+                2
+              ),
             },
           ],
         };
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        console.error(`[ERROR] ${message}`);
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Extraction failed: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // ── Tool 2: Generate AI music ──
+  const generateAudioSchema = {
+    prompt: z
+      .string()
+      .describe(
+        "Music generation prompt. Format: 'Instrumental [style], [BPM] BPM, [beat description], [energy]'. Example: 'Instrumental epic trailer, 128 BPM, precise kick every beat, dramatic energy'"
+      ),
+    lyrics: z
+      .string()
+      .optional()
+      .describe(
+        "Product-specific lyrics with [Verse 1], [Chorus] structure. Example: '[Verse 1]\\nProduct line here\\n\\n[Chorus]\\nCatchy line'"
+      ),
+    duration: z.number().min(5).max(30).describe("Audio duration in seconds (5-30)"),
+  };
+
+  // @ts-expect-error — zod type compatibility
+  server.tool(
+    "generate_audio",
+    "Generate AI background music using WaveSpeed Minimax Music 2.5. Creates dramatic, beat-synced music for product videos. Requires WAVESPEED_API_KEY environment variable.",
+    generateAudioSchema,
+    async ({ prompt, lyrics, duration }: { prompt: string; lyrics?: string; duration: number }) => {
+      try {
+        if (!isAudioGenerationAvailable()) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "Audio generation unavailable: WAVESPEED_API_KEY not set. Use fallback audio or skip this step.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const result = await generateAudio({ prompt, lyrics: lyrics || "", duration });
+
         return {
           content: [
             {
               type: "text" as const,
-              text: `Video generation failed: ${message}`,
+              text: JSON.stringify(
+                {
+                  audioFile: `public/audio/${result.fileName}`,
+                  duration: result.duration,
+                  fileName: result.fileName,
+                },
+                null,
+                2
+              ),
             },
           ],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Audio generation failed: ${message}` }],
           isError: true,
         };
       }
-    },
+    }
+  );
+
+  // ── Tool 3: Render video from React code ──
+  const renderVideoSchema = {
+    reactCode: z
+      .string()
+      .describe(
+        "Complete React/TypeScript component code for Remotion. Must import from 'remotion' and export a default component."
+      ),
+    durationInFrames: z
+      .number()
+      .min(90)
+      .max(900)
+      .describe("Total video duration in frames (30 fps). 300-450 frames = 10-15 seconds."),
+    audioFile: z
+      .string()
+      .optional()
+      .describe("Path to audio file (relative to public/audio/). Example: 'generated-123.mp3'"),
+    outputPath: z
+      .string()
+      .optional()
+      .describe("Output MP4 path. Defaults to ./out/video.mp4"),
+  };
+
+  // @ts-expect-error — zod type compatibility
+  server.tool(
+    "render_video",
+    "Render a video from React/TypeScript code using Remotion. Takes the React component code, duration, optional audio, and outputs an HD MP4 (1920x1080, 30fps).",
+    renderVideoSchema,
+    async ({
+      reactCode,
+      durationInFrames,
+      audioFile,
+      outputPath,
+    }: {
+      reactCode: string;
+      durationInFrames: number;
+      audioFile?: string;
+      outputPath?: string;
+    }) => {
+      try {
+        // Save React code to a temporary composition file
+        const compositionPath = path.resolve(
+          process.cwd(),
+          "src/remotion/compositions/GeneratedVideo.tsx"
+        );
+        await writeFile(compositionPath, reactCode, "utf-8");
+
+        // Bundle Remotion project
+        const entryPoint = path.resolve(process.cwd(), "dist/remotion/index.js");
+        const publicDir = path.resolve(process.cwd(), "public");
+
+        const bundleLocation = await bundle({
+          entryPoint,
+          publicDir,
+        });
+
+        // Render video
+        const resolvedOutput = path.isAbsolute(outputPath || "./out/video.mp4")
+          ? outputPath || "./out/video.mp4"
+          : path.resolve(process.cwd(), outputPath || "./out/video.mp4");
+
+        const composition = await selectComposition({
+          serveUrl: bundleLocation,
+          id: "GeneratedVideo",
+          inputProps: {
+            colorTheme: { primary: "#000", secondary: "#fff", background: "#fff", text: "#000" },
+            audioFile: audioFile ? `public/audio/${audioFile}` : undefined,
+          },
+        });
+
+        await renderMedia({
+          composition,
+          serveUrl: bundleLocation,
+          codec: "h264",
+          outputLocation: resolvedOutput,
+          inputProps: {
+            colorTheme: { primary: "#000", secondary: "#fff", background: "#fff", text: "#000" },
+            audioFile: audioFile ? `public/audio/${audioFile}` : undefined,
+          },
+        });
+
+        const durationSeconds = durationInFrames / 30;
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  videoPath: resolvedOutput,
+                  duration: durationSeconds,
+                  resolution: "1920x1080",
+                  fps: 30,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Rendering failed: ${message}` }],
+          isError: true,
+        };
+      }
+    }
   );
 
   return server;

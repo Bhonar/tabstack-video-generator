@@ -1,20 +1,37 @@
 # @tabstack/video-generator
 
-Turn any landing page into a product launch video. One command.
+**MCP Server + Skill** for Claude Code: Turn any landing page into a dramatic product launch video with AI-generated creative direction.
 
-> URL in, HD video out. AI-generated music, motion graphics, and professional scenes — in minutes.
+> **URL in, HD video out.** Claude Code's AI designs unique animations, custom music, and professional motion graphics — in minutes.
 
-## What you get
+## How it works
 
-Give it a URL → Get back a polished 20–35 second launch video with:
-- AI-generated narration
-- Custom AI music matching your brand
-- Motion graphics and animations
-- Professional scene transitions
+This tool is both an **MCP server** and a **Skill** for Claude Code:
+
+1. **MCP Server** provides tools for:
+   - 📊 **extract_page_data** - TabStack extracts branding, features, colors
+   - 🎵 **generate_audio** - WaveSpeed creates AI music with precise beats
+   - 🎬 **render_video** - Remotion renders React code to HD video
+
+2. **Skill** teaches Claude Code's AI to:
+   - Design creative, varied animations (never repetitive!)
+   - Write executable React/TypeScript video code
+   - Sync transitions to musical beats
+   - Use exact brand colors
+
+**The result:** 10-15 second videos with explosive zooms, dramatic slams, varied animations — each video unique.
 
 ```
-https://stripe.com → video.mp4
+https://tabstack.ai → Claude Code designs creative animations → video.mp4
 ```
+
+## What makes this different
+
+- **✨ Creative freedom**: Claude Code's AI designs unique animations for each video
+- **🎯 Exact branding**: Uses colors extracted directly from the landing page
+- **🎵 Beat-synced**: Transitions land perfectly on musical beats
+- **🚀 No coding**: Just describe what you want, Claude Code writes the React
+- **💰 No AI API keys**: Uses Claude Code's built-in AI (no Gemini/Claude keys needed!)
 
 ---
 
@@ -53,48 +70,49 @@ Don't have it? Download from [claude.ai/download](https://claude.ai/download)
 
 All services have **free tiers** — no credit card required.
 
-**Required keys:**
+**Required:**
 
-1. **TabStack API Key** (extracts landing page data)
+1. **TabStack API Key** (extracts landing page data + brand colors)
    - Go to [console.tabstack.ai](https://console.tabstack.ai)
    - Sign up → Copy your API key
    - Save it for Step 3
 
-2. **Gemini API Key** (plans video scenes and narration)
-   - Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-   - Click "Get API Key" → Copy it
-   - Save it for Step 3
+**Optional (recommended for better videos):**
 
-**Optional but recommended:**
-
-3. **WaveSpeed API Key** (generates custom AI music)
+2. **WaveSpeed API Key** (generates custom AI music with precise beats)
    - Go to [wavespeed.ai](https://wavespeed.ai)
    - Sign up → Get your API key
-   - Without this, you'll get placeholder music instead
+   - Without this, videos won't have music
+
+**✨ No AI API keys needed!** Claude Code's built-in AI handles all the creative work (designing animations, writing React code). You don't need Gemini or Claude API keys.
 
 ---
 
-### Step 3: Choose your setup method
-
-#### **Option A: Use with Claude Code** (easiest)
+### Step 3: Setup with Claude Code
 
 **3a.** Add the MCP server:
 ```bash
 claude mcp add tabstack-video \
   -e TABSTACK_API_KEY=your_tabstack_key_here \
-  -e GEMINI_API_KEY=your_gemini_key_here \
   -e WAVESPEED_API_KEY=your_wavespeed_key_here \
   -- npx -y @tabstack/video-generator
 ```
 
-Replace `your_tabstack_key_here`, `your_gemini_key_here`, etc. with your actual API keys.
+Replace `your_tabstack_key_here` and `your_wavespeed_key_here` with your actual API keys.
 
-**3b.** Restart Claude Code:
+**3b.** Install the Skill:
+```bash
+npx skills add @tabstack/video-generator
+```
+
+This teaches Claude Code's AI how to design creative videos using the MCP tools.
+
+**3c.** Restart Claude Code:
 - Close your current Claude Code window completely
 - Open a new Claude Code session
-- (MCP servers only load on startup)
+- (MCP servers and Skills only load on startup)
 
-**3c.** Generate your first video:
+**3d.** Generate your first video:
 
 Just say to Claude:
 ```
