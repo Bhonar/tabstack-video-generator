@@ -1,45 +1,40 @@
 # @tabstack/video-generator
 
-**MCP Server + Skill** for Claude Code: Turn any landing page into a dramatic product launch video with AI-generated creative direction.
+**MCP + Skill for Claude Code**: Turn any landing page into a premium product launch video with AI-generated animations, beat-synced music, and accurate branding.
 
-> **URL in, HD video out.** Claude Code's AI designs unique animations, custom music, and professional motion graphics — in minutes.
-
-## How it works
-
-This tool is both an **MCP server** and a **Skill** for Claude Code:
-
-1. **MCP Server** provides tools for:
-   - 📊 **extract_page_data** - TabStack extracts branding, features, colors
-   - 🎵 **generate_audio** - WaveSpeed creates AI music with precise beats
-   - 🎬 **render_video** - Remotion renders React code to HD video
-
-2. **Skill** teaches Claude Code's AI to:
-   - Design creative, varied animations (never repetitive!)
-   - Write executable React/TypeScript video code
-   - Sync transitions to musical beats
-   - Use exact brand colors
-
-**The result:** 10-15 second videos with explosive zooms, dramatic slams, varied animations — each video unique.
-
-```
-https://tabstack.ai → Claude Code designs creative animations → video.mp4
-```
-
-## What makes this different
-
-- **✨ Creative freedom**: Claude Code's AI designs unique animations for each video
-- **🎯 Exact branding**: Uses colors extracted directly from the landing page
-- **🎵 Beat-synced**: Transitions land perfectly on musical beats
-- **🚀 No coding**: Just describe what you want, Claude Code writes the React
-- **💰 No AI API keys**: Uses Claude Code's built-in AI (no Gemini/Claude keys needed!)
+> **URL in, HD video out.** Claude Code designs unique animations, generates React code, and renders professional videos — in minutes. No external AI API keys needed!
 
 ---
 
-## Quick Start (5 minutes)
+## ✨ What Makes This Special
 
-### Step 1: Install prerequisites
+- **🎨 Claude Code Generates React Code**: No external AI APIs needed (no Gemini, no Claude API)
+- **🎯 Accurate Branding**: Extracts exact colors and fonts using Playwright browser automation
+- **🎵 Beat-Synchronized**: Animations hit perfectly on music beats using automatic beat detection
+- **💎 Modern UI**: Glassmorphism, animated gradients, glow effects
+- **🚀 MCP + Skill Architecture**: Claude Code orchestrates tools and writes creative code
 
-**Node.js v18+** (check if you have it):
+---
+
+## 🎬 How It Works
+
+**You say**: "Generate a video for https://stripe.com"
+
+**Claude Code**:
+1. Calls `extract_page_data` → TabStack + Playwright get content, colors, fonts
+2. Calls `generate_audio` → WaveSpeed creates music + beat times
+3. Generates React/Remotion code itself with beat-synced animations
+4. Calls `render_video` → Remotion renders to HD MP4
+
+**Result**: 12-15 second video with accurate branding and professional animations!
+
+---
+
+## 🚀 Quick Start (5 Minutes)
+
+### Step 1: Install Prerequisites
+
+**Node.js v18+**:
 ```bash
 node --version   # Should show v18 or higher
 ```
@@ -51,182 +46,189 @@ ffmpeg -version   # Check if installed
 ```
 
 Install FFmpeg:
-| Your OS | Command |
+| OS | Command |
 |---------|---------|
 | **macOS** | `brew install ffmpeg` |
 | **Ubuntu/Debian** | `sudo apt install ffmpeg` |
 | **Windows** | `winget install ffmpeg` |
-| **Fedora** | `sudo dnf install ffmpeg` |
-
-**Claude Code CLI** (recommended):
-```bash
-claude --version   # Check if installed
-```
-Don't have it? Download from [claude.ai/download](https://claude.ai/download)
 
 ---
 
-### Step 2: Get your free API keys
-
-All services have **free tiers** — no credit card required.
+### Step 2: Get API Keys (Free Tiers)
 
 **Required:**
+- **TabStack API Key** - Extract page content and branding
+  - Go to [tabstack.ai](https://tabstack.ai)
+  - Sign up → Get API key
+  - Free tier available
 
-1. **TabStack API Key** (extracts landing page data + brand colors)
-   - Go to [console.tabstack.ai](https://console.tabstack.ai)
-   - Sign up → Copy your API key
-   - Save it for Step 3
+**Optional (Recommended):**
+- **WaveSpeed API Key** - Generate AI music with beat sync
+  - Go to [wavespeed.ai](https://wavespeed.ai)
+  - Sign up → Get API key
+  - Free tier available
+  - *Without this, videos render silently or with placeholder audio*
 
-**Optional (recommended for better videos):**
-
-2. **WaveSpeed API Key** (generates custom AI music with precise beats)
-   - Go to [wavespeed.ai](https://wavespeed.ai)
-   - Sign up → Get your API key
-   - Without this, videos won't have music
-
-**✨ No AI API keys needed!** Claude Code's built-in AI handles all the creative work (designing animations, writing React code). You don't need Gemini or Claude API keys.
+**✨ No Gemini or Claude API keys needed!** Claude Code generates video code directly using its built-in AI.
 
 ---
 
-### Step 3: Setup with Claude Code
+### Step 3: Install MCP Server
 
-**3a.** Add the MCP server:
+Add the MCP server to Claude Code:
+
 ```bash
 claude mcp add tabstack-video \
   -e TABSTACK_API_KEY=your_tabstack_key_here \
   -e WAVESPEED_API_KEY=your_wavespeed_key_here \
-  -- npx -y @tabstack/video-generator
+  -- npx @tabstack/video-generator
 ```
 
-Replace `your_tabstack_key_here` and `your_wavespeed_key_here` with your actual API keys.
-
-**3b.** Install the Skill:
-```bash
-npx skills add @tabstack/video-generator
-```
-
-This teaches Claude Code's AI how to design creative videos using the MCP tools.
-
-**3c.** Restart Claude Code:
-- Close your current Claude Code window completely
-- Open a new Claude Code session
-- (MCP servers and Skills only load on startup)
-
-**3d.** Generate your first video:
-
-Just say to Claude:
-```
-Generate a video for https://yoursite.com
-```
-
-Done! Claude handles everything and shows you the video.
+Replace `your_tabstack_key_here` with your actual TabStack API key.
+*(WaveSpeed key is optional but recommended for AI music)*
 
 ---
 
-#### **Option B: Use CLI directly** (for automation/scripts)
+### Step 4: Restart Claude Code
 
-Run this command (replace the API keys with yours):
+**Important**: MCP servers only load on startup.
 
-```bash
-TABSTACK_API_KEY=your_tabstack_key \
-GEMINI_API_KEY=your_gemini_key \
-WAVESPEED_API_KEY=your_wavespeed_key \
-npx -y @tabstack/video-generator --url https://yoursite.com
-```
-
-Video saves to `./out/video.mp4` and opens automatically.
+1. Close all Claude Code windows completely
+2. Quit the Claude Code application
+3. Open Claude Code again
+4. Verify MCP server is loaded (check status bar or settings)
 
 ---
 
-### Step 4: Verify everything works
+### Step 5: Generate Your First Video!
+
+In Claude Code, just say:
+
+```
+Generate a video for https://stripe.com
+```
+
+Or with AI music:
+
+```
+Generate a video for https://vercel.com with AI music
+```
+
+**That's it!** Claude Code will:
+- Extract page data and branding
+- Generate AI music with beat detection
+- Write React/Remotion code with beat-synced animations
+- Render the video to `out/stripe-video.mp4`
+
+---
+
+## 🎯 Example Prompts
+
+```
+"Generate a video for https://linear.app"
+
+"Create a product launch video for https://notion.so with AI music"
+
+"Make a video for https://supabase.com with dramatic animations"
+
+"Generate a video for https://resend.com and sync it to the beat"
+```
+
+Claude Code understands natural language and will orchestrate the entire workflow!
+
+---
+
+## 🛠️ Verify Setup
 
 Run the setup wizard to check your installation:
 
 ```bash
-npx -y @tabstack/video-generator --setup
+npx @tabstack/video-generator --setup
 ```
 
-This checks for Node.js, FFmpeg, and validates your API keys.
+This checks for:
+- ✅ Node.js v18+
+- ✅ FFmpeg installation
+- ✅ TABSTACK_API_KEY
+- ⚠️ WAVESPEED_API_KEY (optional)
 
 ---
 
-## Advanced Usage
+## 🏗️ Architecture
 
-### Customize music mood
+### MCP Tools (Server Provides)
 
-```bash
-npx @tabstack/video-generator --url https://vercel.com --audio-mood elegant
-```
+1. **`extract_page_data`**
+   - TabStack API: Extracts title, features, pricing from URL
+   - Playwright: Launches headless Chrome to get computed CSS colors and fonts
+   - Returns: Complete page data + accurate branding
 
-**Available moods:** `tech` • `elegant` • `corporate` • `energetic` • `minimal`
+2. **`generate_audio`** (optional)
+   - WaveSpeed: Generates AI music from prompt
+   - Beat detection: Uses music-tempo library to analyze beats
+   - Returns: MP3 file + BPM + beat times in milliseconds + beat frames @ 30fps
 
-### Skip AI music generation (faster)
+3. **`render_video`**
+   - Takes: React/Remotion code generated by Claude Code
+   - Remotion: Renders frames + encodes to MP4 with FFmpeg
+   - Returns: HD video (1920x1080, 30fps)
 
-If you don't have a WaveSpeed API key or want faster rendering:
+### Skill (Teaches Claude Code)
 
-```bash
-npx @tabstack/video-generator --url https://notion.so --no-ai-audio
-```
-
-### Custom output location
-
-```bash
-npx @tabstack/video-generator \
-  --url https://linear.app \
-  --output ./my-video.mp4 \
-  --no-open
-```
-
----
-
-## All CLI Options
-
-| Flag | Description | Example |
-|------|-------------|---------|
-| `--url <url>` | Landing page to convert | `--url https://stripe.com` |
-| `--audio-mood <mood>` | Music style | `--audio-mood elegant` |
-| `--no-ai-audio` | Skip AI music, use placeholder | `--no-ai-audio` |
-| `--output <path>` | Save location | `--output ./video.mp4` |
-| `--no-open` | Don't auto-open after render | `--no-open` |
-| `--setup` | Run setup wizard | `--setup` |
+The `.skills/generate-video.md` file teaches Claude Code:
+- ✅ Workflow: extract → generate audio → write React code → render
+- ✅ Design best practices: glassmorphism, gradients, glow effects
+- ✅ Beat synchronization: pulse on beats, smooth waves, scene timing
+- ✅ Modern UI patterns: proper typography, spacing, animations
+- ✅ Quality checklist: colors, fonts, animations, readability
 
 ---
 
-## How It Works (Behind the Scenes)
+## 📊 What Gets Generated
 
-When you provide a URL, here's what happens:
+### Video Specs
+- **Resolution**: 1920x1080 (Full HD)
+- **Frame Rate**: 30fps
+- **Duration**: 12-15 seconds
+- **Format**: H.264 MP4
+- **Audio**: AI-generated music (if WaveSpeed key provided)
 
-1. **Extract** → TabStack reads your landing page
-   - Pulls product name, tagline, features, pricing
-   - Captures a high-quality screenshot
-   - Analyzes brand colors
-
-2. **Plan** → Gemini AI creates your video storyboard
-   - Determines best scenes (Hook, Problem, Solution, etc.)
-   - Plans timing and transitions
-   - Writes narration script
-   - Generates song lyrics
-
-3. **Generate Audio** → WaveSpeed creates custom music
-   - Generates AI music matching your brand mood
-   - Synthesizes AI narration voiceover
-   - Syncs timing with video scenes
-
-4. **Render** → Remotion builds your video
-   - Creates 1920×1080 HD video
-   - Adds animations and motion graphics
-   - Combines all scenes with audio
-   - Exports final MP4 (20–35 seconds)
-
-**Total time:** Usually 2–4 minutes from URL to video.
+### Design Quality
+- ✅ Exact brand colors (from Playwright CSS extraction)
+- ✅ Exact brand fonts (from computed styles)
+- ✅ Modern UI (glassmorphism, gradients, glows, shadows)
+- ✅ Beat-synced animations (pulse, transitions, entrances)
+- ✅ Professional typography (readable sizes, proper hierarchy)
+- ✅ Smooth animations (spring physics, interpolate)
 
 ---
 
-## Troubleshooting
+## 🎵 Beat Synchronization
+
+One of the standout features is **automatic beat synchronization**:
+
+```typescript
+// Generated code includes beat detection
+const beatFrames = [0, 14, 28, 42, 56, 70, ...]; // @ 30fps
+
+// Animations hit on beats
+const isBeat = beatFrames.some(b => Math.abs(frame - b) < 2);
+transform: `scale(${isBeat ? 1.1 : 1})`  // Pulse on beat
+```
+
+**Benefits**:
+- Animations feel professional and intentional
+- Scene transitions align with music
+- Feature cards enter on beats
+- CTA buttons pulse with rhythm
+
+---
+
+## 🐛 Troubleshooting
 
 ### `ffmpeg: command not found`
 
-**Fix:** Install FFmpeg
+**Fix**: Install FFmpeg
 
 ```bash
 # macOS
@@ -239,140 +241,148 @@ sudo apt install ffmpeg
 winget install ffmpeg
 ```
 
-Then try again.
+### MCP Server Not Working
 
----
+**Fix**: Restart Claude Code completely
 
-### MCP server not showing up in Claude Code
+1. Close all windows
+2. Quit application
+3. Open Claude Code fresh
+4. Try: "Generate a video for https://stripe.com"
 
-**Fix:** Restart Claude Code completely
-1. Close all Claude Code windows
-2. Quit the application
-3. Open Claude Code again
-4. Try asking Claude to generate a video
+### Video Has No Music
 
----
+**Fix**: Add WaveSpeed API key
 
-### Video has no music or uses placeholder audio
+```bash
+claude mcp add tabstack-video \
+  -e TABSTACK_API_KEY=your_key \
+  -e WAVESPEED_API_KEY=your_wavespeed_key \
+  -- npx @tabstack/video-generator
+```
 
-**Fix:** Add your WaveSpeed API key
+Then restart Claude Code.
 
-If you skipped the WaveSpeed key, videos will have placeholder music. To get AI-generated music:
+### `TABSTACK_API_KEY not set`
 
-1. Get a free API key at [wavespeed.ai](https://wavespeed.ai)
-2. Re-add the MCP server with the key:
-   ```bash
-   claude mcp add tabstack-video \
-     -e TABSTACK_API_KEY=your_key \
-     -e GEMINI_API_KEY=your_key \
-     -e WAVESPEED_API_KEY=your_new_wavespeed_key \
-     -- npx -y @tabstack/video-generator
-   ```
+**Fix**: Get API key and add to MCP server
+
+1. Get key at [tabstack.ai](https://tabstack.ai)
+2. Add with `claude mcp add` command (see Step 3)
 3. Restart Claude Code
 
----
+### Colors Look Wrong
 
-### `TABSTACK_API_KEY missing` or `GEMINI_API_KEY missing`
-
-**Fix:** Get the required API keys
-
-- **TabStack:** [console.tabstack.ai](https://console.tabstack.ai)
-- **Gemini:** [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-
-Then add them to your MCP server config (see Step 3 above).
+The tool uses **Playwright browser automation** to extract exact CSS colors. If colors still look wrong:
+- Check the website has clear branding (CTA buttons, headings)
+- Try a different page with more obvious brand colors
+- Report issues at GitHub with the URL
 
 ---
 
-### First render is slow
+## 📚 Learn More
 
-**This is normal!** First render needs to:
-- Download dependencies
-- Bundle code
-- Cache assets
-
-**Next renders will be much faster** (usually under 1 minute).
+- **[HOW-IT-WORKS.md](./HOW-IT-WORKS.md)** - Technical deep-dive with code examples
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - MCP + Skill architecture diagrams
+- **[.skills/generate-video.md](./.skills/generate-video.md)** - Complete Skill guide
 
 ---
 
-### Video quality issues
+## 🎯 Best Practices
 
-Make sure you're using:
-- A clean, professional landing page URL
-- A page with clear product information
-- Good contrast and readable text
+**For Best Results**:
+- Use clean, professional landing pages
+- Sites with clear value propositions work best
+- Pages with CTA buttons help color extraction
+- Well-designed sites produce better videos
 
-The AI works best with well-designed landing pages.
+**Works Great With**:
+- SaaS product landing pages (Stripe, Vercel, Linear)
+- Marketing websites (clear messaging)
+- Product launch pages
 
----
-
-## FAQ
-
-### How much does this cost?
-
-**$0 to start!** All three services have generous free tiers:
-- **TabStack:** Free tier available
-- **Gemini API:** Free up to 60 requests/minute
-- **WaveSpeed:** Free tier for AI music generation
-
-You can generate dozens of videos before hitting any limits.
-
-### Can I use this for commercial projects?
-
-Yes! The generated videos are yours to use however you want. Just make sure you have the rights to use the landing page content you're converting.
-
-### What video format does it output?
-
-1920×1080 MP4 (Full HD), perfect for:
-- Social media posts (LinkedIn, Twitter, Instagram)
-- Product launches
-- Website embeds
-- Email campaigns
-
-### Can I edit the video afterwards?
-
-Yes! The MP4 output can be edited in any video editor (Final Cut, Premiere, iMovie, etc.).
-
-### Does it work with any website?
-
-It works best with:
-- Product landing pages
-- SaaS homepages
-- Marketing websites with clear value propositions
-
-May not work well with:
+**May Struggle With**:
 - E-commerce sites with many products
 - Complex multi-page sites
-- Sites with poor structure or missing content
-
-### Can I customize the scenes?
-
-Currently, the AI determines the best scenes automatically. Future versions will support custom scene templates and manual overrides.
-
-### How long are the generated videos?
-
-20–35 seconds, optimized for social media attention spans.
+- Sites with poor structure or minimal content
 
 ---
 
-## What's Next?
+## 💎 What Makes This Different
 
-After generating your first video:
+### Traditional Approach:
+```
+User → External AI API (Gemini/Claude) → Truncated code → Poor quality
+```
 
-1. **Try different URLs** to see how the AI adapts to different products
-2. **Experiment with audio moods** to match your brand voice
-3. **Integrate into your workflow** using the CLI for batch processing
-4. **Share your videos** on social media and track engagement
+### MCP + Skill Approach:
+```
+User → Claude Code → MCP tools + Self-generated code → Premium video
+```
+
+**Benefits**:
+- ✅ Claude Code sees full context (no token limits)
+- ✅ No code truncation (can generate 500+ lines)
+- ✅ Follows Skill best practices consistently
+- ✅ Beat synchronization works perfectly
+- ✅ No external AI API keys needed (only data extraction)
+- ✅ Can iterate and refine based on results
 
 ---
 
-## Support
+## 📖 Example Workflow
 
-- **Issues?** Open an issue on [GitHub](https://github.com/Bhonar/tabstack-video-generator/issues)
-- **Questions?** Check the troubleshooting section above
-- **Feature requests?** We'd love to hear them!
+```
+User: "Generate a video for https://stripe.com with AI music"
+
+Claude Code:
+  [1] Calling extract_page_data...
+      → TabStack: {title: "Stripe", features: [...]}
+      → Playwright: {colors: "#635BFF", fonts: "Söhne"}
+
+  [2] Calling generate_audio...
+      → WaveSpeed: Generated music
+      → Beat detection: 128 BPM, beats at [0, 468, 937, ...]
+
+  [3] Generating React/Remotion code...
+      → Writing premium UI with glassmorphism
+      → Syncing animations to beat frames [0, 14, 28, ...]
+      → Using exact brand colors and fonts
+
+  [4] Calling render_video...
+      → Remotion: Rendering 360 frames @ 30fps
+      → FFmpeg: Encoding to H.264 MP4
+
+✅ Done! Video saved to: out/stripe-video.mp4
+```
 
 ---
 
-## License
+## 🤝 Contributing
 
-MIT
+Found a bug? Have a feature request?
+
+- **Issues**: [GitHub Issues](https://github.com/Bhonar/tabstack-video-generator/issues)
+- **PRs**: Always welcome!
+
+---
+
+## 📄 License
+
+MIT - Use freely for personal and commercial projects!
+
+---
+
+## 🎉 Credits
+
+Built with:
+- **TabStack** - Page data extraction API
+- **Playwright** - Browser automation for color/font extraction
+- **WaveSpeed** - AI music generation (Minimax Music 2.5)
+- **music-tempo** - Beat detection library
+- **Remotion** - React-based video rendering
+- **Claude Code** - AI-powered code generation
+
+---
+
+**Ready to create amazing videos? Follow the Quick Start above!** 🚀
