@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { extractStructured, captureScreenshot } from "./lib/tabstack-client.js";
+import { extractColors } from "./lib/color-extractor.js";
 import { generateAudio, isAudioGenerationAvailable } from "./lib/audio-generator.js";
 import { runPreflight } from "./lib/preflight.js";
 import { writeFile } from "fs/promises";
@@ -31,6 +32,7 @@ function createServer(): McpServer {
     extractPageDataSchema,
     async ({ url }: { url: string }) => {
       try {
+        // Extract structured data (content, features, etc.)
         const pageData = await extractStructured(url);
 
         // Fix relative logoUrl → absolute URL
@@ -42,6 +44,13 @@ function createServer(): McpServer {
             pageData.logoUrl = "";
           }
         }
+
+        // Extract brand colors using browser automation
+        // This runs JavaScript in the browser to get computed CSS colors
+        const extractedColors = await extractColors(url);
+
+        // Override the colors from schema-based extraction with automation-extracted colors
+        pageData.colors = extractedColors;
 
         // Capture screenshot (non-blocking)
         let screenshotUrl = null;
@@ -184,6 +193,10 @@ function createServer(): McpServer {
           "src/remotion/compositions/GeneratedVideo.tsx"
         );
         await writeFile(compositionPath, reactCode, "utf-8");
+
+        // Rebuild TypeScript to compile the new component
+        const { execSync } = await import("child_process");
+        execSync("npm run build", { cwd: process.cwd(), stdio: "pipe" });
 
         // Bundle Remotion project
         const entryPoint = path.resolve(process.cwd(), "dist/remotion/index.js");

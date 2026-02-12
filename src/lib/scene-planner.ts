@@ -372,9 +372,9 @@ export function buildUserMessage(
 // ── Helper to strip markdown fences from AI response ──
 
 export function stripMarkdownFences(text: string): string {
-  let rawJson = text.trim();
-  if (rawJson.startsWith("```")) {
-    rawJson = rawJson.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  let raw = text.trim();
+  if (raw.startsWith("```")) {
+    raw = raw.replace(/^```(?:json|typescript|tsx|ts|jsx|javascript)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   }
-  return rawJson;
+  return raw;
 }
