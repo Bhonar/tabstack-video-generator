@@ -93,7 +93,7 @@ async function analyzeBeatPattern(mp3Path: string): Promise<{
     );
 
     // 3. Analyze with music-tempo
-    const tempo = MusicTempo(audioData);
+    const tempo = new MusicTempo(audioData);
 
     if (!tempo || !tempo.tempo || !tempo.beats) {
       logDetail("Beat detection returned no results");

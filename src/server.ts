@@ -104,7 +104,7 @@ function createServer(): McpServer {
   // @ts-expect-error — zod type compatibility
   server.tool(
     "generate_audio",
-    "Generate AI background music using WaveSpeed Minimax Music 2.5. Creates dramatic, beat-synced music for product videos. Requires WAVESPEED_API_KEY environment variable.",
+    "Generate AI background music using WaveSpeed Minimax Music 2.5. Creates dramatic, beat-synced music for product videos. MANDATORY: WAVESPEED_API_KEY environment variable must be set.",
     generateAudioSchema,
     async ({ prompt, lyrics }: { prompt: string; lyrics?: string }) => {
       try {
@@ -113,7 +113,7 @@ function createServer(): McpServer {
             content: [
               {
                 type: "text" as const,
-                text: "Audio generation unavailable: WAVESPEED_API_KEY not set. Use fallback audio or skip this step.",
+                text: "CRITICAL ERROR: Audio generation is MANDATORY. WAVESPEED_API_KEY environment variable is not set.\n\nVideo generation cannot proceed without AI music. Please:\n1. Get your API key from https://wavespeed.ai\n2. Set it in your environment: WAVESPEED_API_KEY=your_key_here\n3. Restart Claude Code\n\nAudio is a required component for professional video quality.",
               },
             ],
             isError: true,
@@ -129,8 +129,11 @@ function createServer(): McpServer {
               text: JSON.stringify(
                 {
                   audioFile: `public/audio/${result.fileName}`,
-                  durationMs: result.durationMs,
                   fileName: result.fileName,
+                  durationMs: result.durationMs,
+                  bpm: result.bpm,
+                  beatTimes: result.beatTimes,
+                  beatFrames: result.beatFrames,
                 },
                 null,
                 2
