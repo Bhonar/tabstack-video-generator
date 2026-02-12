@@ -23,7 +23,7 @@ const TOTAL_STEPS = 6;
 export async function generateVideo(
   options: GenerateVideoOptions,
 ): Promise<GenerateVideoResult> {
-  const { url, outputPath, audioMoodOverride, skipAiAudio } = options;
+  const { url, outputPath, audioMoodOverride, skipAiAudio, debug } = options;
   let { skipNarration } = options;
 
   // ── Pre-flight checks ──
@@ -80,6 +80,15 @@ export async function generateVideo(
     url,
     audioMoodOverride,
   );
+
+  // ── Debug: Print full storyboard ──
+  if (debug) {
+    console.log("\n" + "=".repeat(80));
+    console.log("DEBUG: Full Storyboard JSON");
+    console.log("=".repeat(80));
+    console.log(JSON.stringify(storyboard, null, 2));
+    console.log("=".repeat(80) + "\n");
+  }
 
   // ── Step 4: Generate AI background music ──
   logProgress(4, TOTAL_STEPS, "Generating AI background music...");

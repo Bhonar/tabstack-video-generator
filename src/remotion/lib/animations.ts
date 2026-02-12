@@ -68,12 +68,66 @@ export function useFadeSlideUp(
   };
 }
 
+/** Fade + slide from left */
+export function useFadeSlideLeft(
+  startFrame = 0,
+  distance = 60,
+): CSSProperties {
+  const progress = useEntrance(startFrame);
+  return {
+    opacity: progress,
+    transform: `translateX(${interpolate(progress, [0, 1], [-distance, 0])}px)`,
+  };
+}
+
+/** Fade + slide from right */
+export function useFadeSlideRight(
+  startFrame = 0,
+  distance = 60,
+): CSSProperties {
+  const progress = useEntrance(startFrame);
+  return {
+    opacity: progress,
+    transform: `translateX(${interpolate(progress, [0, 1], [distance, 0])}px)`,
+  };
+}
+
+/** Fade + slide down from top */
+export function useFadeSlideDown(
+  startFrame = 0,
+  distance = 40,
+): CSSProperties {
+  const progress = useEntrance(startFrame);
+  return {
+    opacity: progress,
+    transform: `translateY(${interpolate(progress, [0, 1], [-distance, 0])}px)`,
+  };
+}
+
 /** Scale-in entrance – returns a CSSProperties object. */
 export function useScaleIn(startFrame = 0): CSSProperties {
   const progress = useEntrance(startFrame);
   return {
     opacity: progress,
     transform: `scale(${interpolate(progress, [0, 1], [0.85, 1])})`,
+  };
+}
+
+/** Explosive zoom-in */
+export function useZoomIn(startFrame = 0): CSSProperties {
+  const progress = useEntrance(startFrame);
+  return {
+    opacity: progress,
+    transform: `scale(${interpolate(progress, [0, 1], [0.3, 1])})`,
+  };
+}
+
+/** Rotate + fade entrance */
+export function useRotateIn(startFrame = 0): CSSProperties {
+  const progress = useEntrance(startFrame);
+  return {
+    opacity: progress,
+    transform: `rotate(${interpolate(progress, [0, 1], [-15, 0])}deg) scale(${interpolate(progress, [0, 1], [0.9, 1])})`,
   };
 }
 

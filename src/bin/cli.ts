@@ -85,7 +85,7 @@ async function runCli(url: string) {
   }
 
   // Validate audio mood
-  const VALID_MOODS = ["cinematic-classical", "cinematic-electronic", "cinematic-pop", "cinematic-epic", "cinematic-dark"];
+  const VALID_MOODS = ["cinematic-pop", "cinematic-epic", "cinematic-dark"];
   const audioMood = getFlagValue("--audio-mood");
   if (audioMood && !VALID_MOODS.includes(audioMood)) {
     console.error(
@@ -99,6 +99,7 @@ async function runCli(url: string) {
   const noAiAudio = hasFlag("--no-ai-audio");
   const noNarration = hasFlag("--no-narration");
   const narration = hasFlag("--narration");
+  const debug = hasFlag("--debug");
 
   // Pre-flight
   console.log(`\n${BOLD}Pre-flight checks${RESET}`);
@@ -133,6 +134,7 @@ async function runCli(url: string) {
     skipAiAudio: noAiAudio,
     skipNarration,
     aiProvider,
+    debug,
   });
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -222,11 +224,12 @@ ${BOLD}CLI Options:${RESET}
   --url <url>           Landing page URL ${DIM}(required for CLI mode)${RESET}
   --output <path>       Output file path ${DIM}(default: ./out/video.mp4)${RESET}
   --ai <provider>       AI provider: gemini | claude ${DIM}(auto-detected from keys)${RESET}
-  --audio-mood <mood>   ${DIM}cinematic-classical | cinematic-electronic | cinematic-pop | cinematic-epic | cinematic-dark${RESET}
+  --audio-mood <mood>   ${DIM}cinematic-pop | cinematic-epic | cinematic-dark${RESET}
   --narration           Enable AI voiceover narration ${DIM}(Gemini only — requires Gemini TTS)${RESET}
   --no-narration        Disable narration ${DIM}(default)${RESET}
   --no-ai-audio         Skip AI music generation, use static audio files
   --no-open             Don't auto-open the video after rendering
+  --debug               Print full storyboard JSON for debugging
   --help                Show this help message
 
 ${BOLD}AI Providers:${RESET}

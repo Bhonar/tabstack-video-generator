@@ -202,10 +202,7 @@ function createServer(): McpServer {
         const composition = await selectComposition({
           serveUrl: bundleLocation,
           id: "GeneratedVideo",
-          inputProps: {
-            colorTheme: { primary: "#000", secondary: "#fff", background: "#fff", text: "#000" },
-            audioFile: audioFile ? `public/audio/${audioFile}` : undefined,
-          },
+          inputProps: {},
         });
 
         await renderMedia({
@@ -213,10 +210,7 @@ function createServer(): McpServer {
           serveUrl: bundleLocation,
           codec: "h264",
           outputLocation: resolvedOutput,
-          inputProps: {
-            colorTheme: { primary: "#000", secondary: "#fff", background: "#fff", text: "#000" },
-            audioFile: audioFile ? `public/audio/${audioFile}` : undefined,
-          },
+          inputProps: {},
         });
 
         const durationSeconds = durationInFrames / 30;

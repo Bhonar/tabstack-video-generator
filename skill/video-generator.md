@@ -127,7 +127,13 @@ Duration should match video length (10-15 seconds).
 ```
 
 ### Step 5: Write React Video Code
-Generate a complete Remotion component that implements your creative vision.
+Generate a SELF-CONTAINED Remotion component with ALL data baked in - NO PROPS!
+
+**CRITICAL: The component must be completely self-contained:**
+- NO props or interfaces
+- ALL colors hardcoded from the extracted data
+- ALL text content embedded directly in the code
+- Audio file path (if any) hardcoded from Step 4
 
 **Required structure:**
 ```typescript
@@ -142,22 +148,15 @@ import {
   Audio
 } from "remotion";
 
-interface Props {
-  colorTheme: {
-    primary: string;
-    secondary: string;
-    background: string;
-    text: string;
-  };
-  audioFile?: string;
-}
-
-export default function ProductLaunchVideo({
-  colorTheme,
-  audioFile
-}: Props) {
+export default function ProductLaunchVideo() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+
+  // All colors from extracted data - EXACT hex codes
+  const BRAND_PRIMARY = "#4F46E5";  // From extract_page_data
+  const BRAND_SECONDARY = "#E0E7FF";
+  const BRAND_BACKGROUND = "#FFFFFF";
+  const BRAND_TEXT = "#0F172A";
 
   // Scene timings (beat-synced at 128 BPM = ~15 frames per beat)
   const HOOK_START = 0;
@@ -165,6 +164,11 @@ export default function ProductLaunchVideo({
   const PROBLEM_START = 60;
   const PROBLEM_END = 135;
   // ... etc
+
+  // All content from extracted data - baked in
+  const BRAND_NAME = "Tabstack";
+  const TAGLINE = "Web Browsing for AI Systems";
+  const LOGO_URL = "https://tabstack.ai/images/icons/logo.svg";
 
   // Animations with spring configs
   const logoProgress = spring({
@@ -176,8 +180,8 @@ export default function ProductLaunchVideo({
   const logoScale = interpolate(logoProgress, [0, 1], [0.3, 1]);
 
   return (
-    <AbsoluteFill style={{ background: colorTheme.background }}>
-      {audioFile && <Audio src={audioFile} />}
+    <AbsoluteFill style={{ background: BRAND_BACKGROUND }}>
+      <Audio src="public/audio/generated-123.mp3" />  {/* Hardcode from Step 4 */}
 
       {/* Hook Scene */}
       <Sequence from={HOOK_START} durationInFrames={HOOK_END - HOOK_START}>

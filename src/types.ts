@@ -38,6 +38,7 @@ export interface GenerateVideoOptions {
   skipAiAudio?: boolean;
   skipNarration?: boolean;
   aiProvider?: string; // "gemini" | "claude" — auto-detected if not set
+  debug?: boolean; // Print full storyboard JSON for debugging
 }
 
 // ── Result returned after video generation ──

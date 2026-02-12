@@ -35,9 +35,9 @@ export const HookScene: React.FC<Props> = ({
     extrapolateRight: "clamp",
   });
 
-  // Logo — elastic bounce with rotation
+  // Logo — elastic bounce with rotation (starts IMMEDIATELY at frame 0)
   const logoProgress = spring({
-    frame: Math.max(0, frame - 2),
+    frame,
     fps,
     config: BOUNCE_SPRING,
   });

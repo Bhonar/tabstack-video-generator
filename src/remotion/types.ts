@@ -15,10 +15,8 @@ export interface ColorTheme {
   textSecondary: string;
 }
 
-// ── Audio mood — all dramatic/cinematic styles ──
+// ── Audio mood — dramatic/exciting/upbeat styles with clear beats ──
 export type AudioMood =
-  | "cinematic-classical"
-  | "cinematic-electronic"
   | "cinematic-pop"
   | "cinematic-epic"
   | "cinematic-dark";
