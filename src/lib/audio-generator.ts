@@ -1,8 +1,10 @@
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 import { logDetail } from "./progress.js";
 import { getPackageRoot } from "./preflight.js";
 import { getWaveSpeedKey as getWaveSpeedKeyDefault, hasWaveSpeedKey } from "./defaults.js";
+import MusicTempo from "music-tempo";
 
 // ── Constants ──
 
@@ -57,6 +59,68 @@ export interface GenerateAudioResult {
   filePath: string;
   fileName: string;
   durationMs: number;
+  bpm?: number;
+  beatTimes?: number[]; // beat timestamps in milliseconds
+  beatFrames?: number[]; // beat frame numbers @ 30fps
+}
+
+// ── Beat Analysis ──
+
+/**
+ * Analyze beat pattern from MP3 file.
+ * Uses FFmpeg to decode → music-tempo to detect BPM and beat times.
+ */
+async function analyzeBeatPattern(mp3Path: string): Promise<{
+  bpm: number;
+  beatTimes: number[];
+  beatFrames: number[];
+} | null> {
+  try {
+    // 1. Decode MP3 to raw PCM using FFmpeg
+    const tempPcmPath = mp3Path.replace(".mp3", ".pcm");
+
+    execSync(
+      `ffmpeg -i "${mp3Path}" -f f32le -acodec pcm_f32le -ac 1 -ar 44100 "${tempPcmPath}" -y`,
+      { stdio: "pipe" }
+    );
+
+    // 2. Read PCM data as Float32Array
+    const pcmBuffer = fs.readFileSync(tempPcmPath);
+    const audioData = new Float32Array(
+      pcmBuffer.buffer,
+      pcmBuffer.byteOffset,
+      pcmBuffer.length / 4
+    );
+
+    // 3. Analyze with music-tempo
+    const tempo = MusicTempo(audioData);
+
+    if (!tempo || !tempo.tempo || !tempo.beats) {
+      logDetail("Beat detection returned no results");
+      // Clean up temp file
+      try {
+        fs.unlinkSync(tempPcmPath);
+      } catch {}
+      return null;
+    }
+
+    const bpm = Math.round(tempo.tempo);
+    const beatTimes = tempo.beats.map((beat: number) => Math.round(beat * 1000)); // seconds → ms
+
+    // Convert to frame numbers @ 30fps
+    const beatFrames = beatTimes.map((ms: number) => Math.round((ms / 1000) * 30));
+
+    // Clean up temp file
+    try {
+      fs.unlinkSync(tempPcmPath);
+    } catch {}
+
+    return { bpm, beatTimes, beatFrames };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logDetail(`Beat analysis failed: ${msg}`);
+    return null;
+  }
 }
 
 // ── Main function ──
@@ -64,6 +128,7 @@ export interface GenerateAudioResult {
 /**
  * Generate background music using WaveSpeed Minimax Music 2.5.
  * Submits a job, polls for completion, downloads the MP3 to public/audio/.
+ * Analyzes beat pattern for animation synchronization.
  */
 export async function generateAudio(
   options: GenerateAudioOptions,
@@ -202,12 +267,27 @@ export async function generateAudio(
   const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
   fs.writeFileSync(filePath, audioBuffer);
 
-  const durationMs = Date.now() - startTime;
+  const generationDurationMs = Date.now() - startTime;
   logDetail(
-    `Audio saved: ${fileName} (${(audioBuffer.length / 1024).toFixed(0)} KB, generated in ${(durationMs / 1000).toFixed(1)}s)`,
+    `Audio saved: ${fileName} (${(audioBuffer.length / 1024).toFixed(0)} KB, generated in ${(generationDurationMs / 1000).toFixed(1)}s)`,
   );
 
-  return { filePath, fileName, durationMs };
+  // 4. Analyze beats using music-tempo
+  logDetail("Analyzing beat pattern...");
+  const beatAnalysis = await analyzeBeatPattern(filePath);
+
+  if (beatAnalysis) {
+    logDetail(`Detected ${beatAnalysis.bpm} BPM, ${beatAnalysis.beatTimes.length} beats`);
+  }
+
+  return {
+    filePath,
+    fileName,
+    durationMs: generationDurationMs,
+    bpm: beatAnalysis?.bpm,
+    beatTimes: beatAnalysis?.beatTimes,
+    beatFrames: beatAnalysis?.beatFrames,
+  };
 }
 
 // ── Check if audio generation is available ──
